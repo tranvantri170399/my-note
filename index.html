@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Note Vault — Lưu trữ Mail & Tài khoản (GitHub Gist)</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <noscript>
+    <div style="padding: 20px; text-align: center; font-family: sans-serif;">
+      Ứng dụng cần bật JavaScript để mã hóa và đồng bộ với GitHub Gist.
+    </div>
+  </noscript>
+
+  <!-- MÀN HÌNH MỞ KHÓA / ĐĂNG NHẬP -->
+  <main id="auth-view" class="auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="brand-badge">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span>My Note Vault</span>
+        </div>
+        <button type="button" id="auth-theme-btn" class="icon-btn" title="Đổi giao diện Sáng/Tối" aria-label="Đổi giao diện">
+          ◐
+        </button>
+      </div>
+
+      <h1>Kho tài khoản cá nhân</h1>
+      <p class="subtitle">
+        Mã hóa đầu cuối <strong>AES-256-GCM</strong> ngay trên trình duyệt, lưu duy nhất vào file <code>data.json</code> trên Private GitHub Gist của bạn.
+      </p>
+
+      <div id="saved-token-banner" class="saved-banner hidden">
+        <span>Đã nhớ GitHub Token trên trình duyệt này</span>
+        <button type="button" id="clear-saved-token-btn" class="link-danger">Xóa Token</button>
+      </div>
+
+      <form id="auth-form" autocomplete="off">
+        <div class="field">
+          <label for="pat-input">GitHub Personal Access Token (PAT)</label>
+          <div class="input-group">
+            <input
+              type="password"
+              id="pat-input"
+              placeholder="ghp_... hoặc github_pat_..."
+              required
+              spellcheck="false"
+            />
+            <button type="button" id="toggle-pat-btn" class="ghost-btn" tabindex="-1">Hiện</button>
+          </div>
+          <small class="hint">Chỉ cần cấp duy nhất quyền <code>gist</code>. Chỉ lưu tạm ở <code>localStorage</code> máy bạn.</small>
+        </div>
+
+        <div class="field">
+          <label for="gist-id-input">Gist ID hoặc URL <span class="optional">(Tùy chọn)</span></label>
+          <input
+            type="text"
+            id="gist-id-input"
+            placeholder="Để trống để tự tìm hoặc tự tạo Private Gist mới"
+            spellcheck="false"
+          />
+        </div>
+
+        <div class="field">
+          <label for="master-password-input">Master Password (Khóa giải mã)</label>
+          <div class="input-group">
+            <input
+              type="password"
+              id="master-password-input"
+              placeholder="Nhập mật khẩu chủ để mã hóa / giải mã..."
+              required
+            />
+            <button type="button" id="toggle-master-btn" class="ghost-btn" tabindex="-1">Hiện</button>
+          </div>
+          <small class="hint">Master Password <strong>không bao giờ</strong> lưu xuống ổ cứng hay gửi lên mạng.</small>
+        </div>
+
+        <label class="checkbox-row">
+          <input type="checkbox" id="remember-pat-checkbox" checked />
+          <span>Lưu tạm Token & Gist ID vào <code>localStorage</code> thiết bị này</span>
+        </label>
+
+        <div id="auth-error" class="alert-error hidden"></div>
+
+        <button type="submit" id="auth-submit-btn" class="btn btn-primary btn-block">
+          Mở khóa kho dữ liệu
+        </button>
+      </form>
+
+      <details class="guide-box">
+        <summary>Hướng dẫn lấy GitHub Token (30 giây)</summary>
+        <ol>
+          <li>Vào <strong>GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)</strong> (hoặc Fine-grained tokens → Gists: Read &amp; Write).</li>
+          <li>Tạo token mới và chỉ tích chọn quyền <strong><code>gist</code></strong> (Create gists).</li>
+          <li>Dán Token vào ô trên và đặt một <strong>Master Password</strong>. Lần đầu web sẽ tự tạo một Private Gist chứa <code>data.json</code> đã mã hóa.</li>
+        </ol>
+      </details>
+    </div>
+  </main>
+
+  <!-- MÀN HÌNH CHÍNH (KHO TÀI KHOẢN) -->
+  <div id="vault-view" class="vault-wrapper hidden">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="brand-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span>My Note Vault</span>
+        </div>
+        <div class="sync-pill">
+          <span id="sync-dot" class="dot dot-ok"></span>
+          <span id="sync-status">Đã đồng bộ</span>
+          <span id="gist-visibility-badge" class="visibility-badge">🔒 Private</span>
+          <a id="gist-link" href="#" target="_blank" rel="noopener noreferrer" title="Xem file data.json trên GitHub Gist">Gist ↗</a>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <button type="button" id="sync-btn" class="btn btn-ghost" title="Tải lại dữ liệu mới nhất từ Gist">
+          ↻ Đồng bộ
+        </button>
+        <button type="button" id="backup-menu-btn" class="btn btn-ghost" title="Sao lưu data.json & Cài đặt">
+          Sao lưu & Cài đặt
+        </button>
+        <button type="button" id="theme-toggle-btn" class="icon-btn" title="Đổi giao diện Sáng/Tối" aria-label="Đổi giao diện">
+          ◐
+        </button>
+        <button type="button" id="lock-btn" class="btn btn-outline" title="Khóa kho ngay lập tức">
+          Khóa
+        </button>
+      </div>
+    </header>
+
+    <section class="toolbar">
+      <div class="search-box">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input
+          type="search"
+          id="search-input"
+          placeholder="Tìm theo tên dịch vụ, email, username, website, ghi chú... (Phím /)"
+        />
+      </div>
+      <button type="button" id="add-item-btn" class="btn btn-primary">
+        + Thêm tài khoản
+      </button>
+    </section>
+
+    <nav id="category-filters" class="filter-bar" aria-label="Bộ lọc phân loại">
+      <button type="button" class="chip active" data-filter="all">Tất cả</button>
+      <button type="button" class="chip" data-filter="pinned">★ Đã ghim</button>
+      <button type="button" class="chip" data-filter="email">Email</button>
+      <button type="button" class="chip" data-filter="social">Mạng xã hội</button>
+      <button type="button" class="chip" data-filter="work">Công việc</button>
+      <button type="button" class="chip" data-filter="finance">Tài chính</button>
+      <button type="button" class="chip" data-filter="dev">Dev / Cloud</button>
+      <button type="button" class="chip" data-filter="other">Khác</button>
+    </nav>
+
+    <div class="list-meta">
+      <span id="items-count">0 mục</span>
+    </div>
+
+    <section id="items-list" class="items-grid"></section>
+
+    <div id="empty-state" class="empty-state hidden">
+      <p id="empty-state-text">Chưa có mục nào phù hợp.</p>
+      <button type="button" id="empty-add-btn" class="btn btn-outline">+ Thêm mail / tài khoản đầu tiên</button>
+    </div>
+  </div>
+
+  <!-- MODAL THÊM / SỬA TÀI KHOẢN -->
+  <div id="item-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="item-modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="item-modal-title">Thêm tài khoản mới</h2>
+        <button type="button" id="close-item-modal-btn" class="icon-btn" aria-label="Đóng">✕</button>
+      </div>
+
+      <form id="item-form" autocomplete="off">
+        <input type="hidden" id="item-id" />
+
+        <div class="form-row-2">
+          <div class="field">
+            <label for="item-title">Tên dịch vụ / Tiêu đề *</label>
+            <input type="text" id="item-title" placeholder="VD: Gmail chính, GitHub, Vietcombank..." required />
+          </div>
+
+          <div class="field">
+            <label for="item-category">Phân loại</label>
+            <select id="item-category">
+              <option value="email">Email</option>
+              <option value="social">Mạng xã hội</option>
+              <option value="work">Công việc</option>
+              <option value="finance">Tài chính / Ngân hàng</option>
+              <option value="dev">Dev / Cloud</option>
+              <option value="other">Khác</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="item-username">Email / Tên đăng nhập</label>
+          <input type="text" id="item-username" placeholder="example@gmail.com hoặc username" spellcheck="false" />
+        </div>
+
+        <div class="field">
+          <label for="item-password">Mật khẩu</label>
+          <div class="input-group">
+            <input type="password" id="item-password" placeholder="Nhập hoặc bấm Tạo mật khẩu mạnh" spellcheck="false" />
+            <button type="button" id="toggle-item-pw-btn" class="ghost-btn">Hiện</button>
+            <button type="button" id="gen-pw-btn" class="ghost-btn" title="Tạo mật khẩu ngẫu nhiên 18 ký tự">🎲 Tạo</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="item-url">Website / Đường dẫn <span class="optional">(Tùy chọn)</span></label>
+          <input type="text" id="item-url" placeholder="https://mail.google.com" spellcheck="false" />
+        </div>
+
+        <div class="field">
+          <label for="item-notes">Ghi chú / Mail khôi phục / Mã 2FA dự phòng</label>
+          <textarea id="item-notes" rows="3" placeholder="SĐT đăng ký, mail khôi phục, mã backup 2FA, câu hỏi bảo mật..."></textarea>
+        </div>
+
+        <label class="checkbox-row">
+          <input type="checkbox" id="item-pinned" />
+          <span>★ Ghim mục này lên đầu danh sách</span>
+        </label>
+
+        <div class="modal-footer">
+          <button type="button" id="cancel-item-btn" class="btn btn-ghost">Hủy</button>
+          <button type="submit" id="save-item-btn" class="btn btn-primary">Lưu & Mã hóa lên Gist</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL SAO LƯU & CÀI ĐẶT -->
+  <div id="settings-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="settings-modal-title">Sao lưu & Cài đặt</h2>
+        <button type="button" id="close-settings-modal-btn" class="icon-btn" aria-label="Đóng">✕</button>
+      </div>
+
+      <div class="settings-section">
+        <h3>Thông tin GitHub Gist hiện tại <span id="display-gist-visibility" class="visibility-badge"></span></h3>
+        <div class="input-group">
+          <input type="text" id="display-gist-id" readonly />
+          <button type="button" id="copy-gist-id-btn" class="ghost-btn">Copy ID</button>
+        </div>
+        <small class="hint">Lưu lại Gist ID này nếu muốn mở nhanh trên thiết bị khác.</small>
+      </div>
+
+      <div class="settings-section">
+        <h3>Sao lưu & Khôi phục (File JSON)</h3>
+        <p class="section-desc">Toàn bộ dữ liệu nằm gọn trong 1 file JSON. Khuyên dùng bản sao lưu đã mã hóa để an toàn tuyệt đối.</p>
+        <div class="btn-row">
+          <button type="button" id="export-encrypted-btn" class="btn btn-primary">
+            ⬇ Tải data.json (Đã mã hóa)
+          </button>
+          <button type="button" id="export-plain-btn" class="btn btn-outline">
+            ⬇ Xuất JSON (Giải mã)
+          </button>
+        </div>
+        <div class="import-row">
+          <input type="file" id="import-file-input" accept=".json,application/json" class="hidden" />
+          <button type="button" id="import-btn" class="btn btn-ghost">
+            ⬆ Nhập / Khôi phục từ file .json
+          </button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Đổi Master Password</h3>
+        <form id="change-pw-form" class="inline-pw-form">
+          <input type="password" id="new-master-pw" placeholder="Master Password mới" required />
+          <input type="password" id="confirm-master-pw" placeholder="Nhập lại mật khẩu mới" required />
+          <button type="submit" id="change-pw-submit-btn" class="btn btn-outline">Cập nhật khóa mã hóa</button>
+        </form>
+      </div>
+
+      <div class="settings-section danger-zone">
+        <h3>Thiết bị này</h3>
+        <button type="button" id="logout-forget-btn" class="btn btn-danger">
+          Xóa Token khỏi localStorage & Đăng xuất
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL XÁC NHẬN XÓA -->
+  <div id="delete-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+    <div class="modal-card modal-sm">
+      <div class="modal-header">
+        <h2 id="delete-modal-title">Xóa tài khoản?</h2>
+      </div>
+      <p class="delete-desc">
+        Bạn có chắc muốn xóa <strong id="delete-item-name"></strong>? Thay đổi sẽ được cập nhật ngay lên Gist <code>data.json</code>.
+      </p>
+      <div class="modal-footer">
+        <button type="button" id="cancel-delete-btn" class="btn btn-ghost">Hủy</button>
+        <button type="button" id="confirm-delete-btn" class="btn btn-danger">Xóa vĩnh viễn</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST THÔNG BÁO -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <script defer src="./js/crypto.js"></script>
+  <script defer src="./js/gist.js"></script>
+  <script defer src="./js/app.js"></script>
+</body>
+</html>
