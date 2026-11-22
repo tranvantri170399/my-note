@@ -17,6 +17,13 @@ const {
   updateVaultGist,
 } = require('../js/gist.js');
 
+const {
+  toDatetimeLocalValue,
+  fromDatetimeLocalValue,
+  getReminderStatus,
+  buildGoogleCalendarUrl,
+} = require('../js/reminder.js');
+
 test('encryptVaultData & decryptVaultData roundtrip with Vietnamese text', async () => {
   const payload = {
     version: 1,
@@ -194,4 +201,54 @@ test('GitHub Gist API client handles create, find, fetch, and update with mocked
   assert.equal(updated.updatedAt, '2026-11-22T08:05:00Z');
   assert.equal(calls.length, 4);
   assert.equal(calls[0].headers.Authorization, 'Bearer pat_test_123');
+});
+
+test('reminder status classifies overdue, soon, scheduled, and done accurately', () => {
+  const now = Date.parse('2026-11-22T08:00:00.000Z');
+
+  assert.equal(getReminderStatus({ title: 'No date' }, now).state, 'none');
+  assert.equal(
+    getReminderStatus({ remindAt: '2026-11-22T07:00:00.000Z' }, now).state,
+    'overdue'
+  );
+  assert.equal(
+    getReminderStatus({ remindAt: '2026-11-25T08:00:00.000Z' }, now).state,
+    'soon'
+  );
+  assert.equal(
+    getReminderStatus({ remindAt: '2026-12-15T08:00:00.000Z' }, now).state,
+    'scheduled'
+  );
+  assert.equal(
+    getReminderStatus({ remindAt: '2026-11-20T08:00:00.000Z', remindDone: true }, now).state,
+    'done'
+  );
+});
+
+test('datetime-local roundtrip and Google Calendar URL never expose secrets', () => {
+  const local = toDatetimeLocalValue('2026-12-15T02:00:00.000Z');
+  assert.match(local, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+  assert.equal(fromDatetimeLocalValue(local), '2026-12-15T02:00:00.000Z');
+
+  const urlStr = buildGoogleCalendarUrl({
+    title: 'Netflix Trial',
+    username: 'secret_email@gmail.com',
+    password: 'SuperSecretPassword!999',
+    notes: 'PIN 4321',
+    remindAt: '2026-12-15T02:00:00.000Z',
+    remindNote: 'Hủy gói dùng thử trước khi trừ tiền',
+  });
+
+  const url = new URL(urlStr);
+  assert.equal(url.origin, 'https://calendar.google.com');
+  assert.equal(url.pathname, '/calendar/render');
+  assert.equal(url.searchParams.get('action'), 'TEMPLATE');
+  assert.equal(url.searchParams.get('dates'), '20261215T020000Z/20261215T023000Z');
+  assert.match(url.searchParams.get('text'), /Netflix Trial/);
+  assert.match(url.searchParams.get('text'), /Hủy gói dùng thử/);
+
+  // Bảo mật: không rò rỉ email, mật khẩu hoặc ghi chú mật sang URL Google Calendar
+  assert.equal(urlStr.includes('secret_email@gmail.com'), false);
+  assert.equal(urlStr.includes('SuperSecretPassword!999'), false);
+  assert.equal(urlStr.includes('PIN 4321'), false);
 });

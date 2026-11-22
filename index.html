@@ -148,6 +148,7 @@
     <nav id="category-filters" class="filter-bar" aria-label="Bộ lọc phân loại">
       <button type="button" class="chip active" data-filter="all">Tất cả</button>
       <button type="button" class="chip" data-filter="pinned">★ Đã ghim</button>
+      <button type="button" id="filter-upcoming-btn" class="chip" data-filter="upcoming">⏰ Có lịch hẹn</button>
       <button type="button" class="chip" data-filter="email">Email</button>
       <button type="button" class="chip" data-filter="social">Mạng xã hội</button>
       <button type="button" class="chip" data-filter="work">Công việc</button>
@@ -155,6 +156,11 @@
       <button type="button" class="chip" data-filter="dev">Dev / Cloud</button>
       <button type="button" class="chip" data-filter="other">Khác</button>
     </nav>
+
+    <div id="due-banner" class="due-banner hidden">
+      <span id="due-banner-text"></span>
+      <button type="button" id="due-banner-btn" class="ghost-btn">Xem lịch hẹn</button>
+    </div>
 
     <div class="list-meta">
       <span id="items-count">0 mục</span>
@@ -220,6 +226,27 @@
         <div class="field">
           <label for="item-notes">Ghi chú / Mail khôi phục / Mã 2FA dự phòng</label>
           <textarea id="item-notes" rows="3" placeholder="SĐT đăng ký, mail khôi phục, mã backup 2FA, câu hỏi bảo mật..."></textarea>
+        </div>
+
+        <div class="reminder-box">
+          <div class="reminder-box-head">
+            <span>⏰ Đặt hẹn nhắc / Ngày cần hủy <span class="optional">(Tùy chọn)</span></span>
+            <button type="button" id="clear-remind-btn" class="link-muted hidden">Xóa lịch hẹn</button>
+          </div>
+          <div class="form-row-2">
+            <div class="field">
+              <label for="item-remind-at">Ngày &amp; giờ nhắc</label>
+              <input type="datetime-local" id="item-remind-at" />
+            </div>
+            <div class="field">
+              <label for="item-remind-note">Việc cần làm</label>
+              <input type="text" id="item-remind-note" placeholder="VD: Hủy gói dùng thử trước khi gia hạn" />
+            </div>
+          </div>
+          <div class="reminder-box-actions">
+            <button type="button" id="modal-gcal-btn" class="ghost-btn hidden">📅 Thêm vào Google Calendar</button>
+            <small class="hint">Chỉ gửi tiêu đề &amp; việc cần làm sang Google Calendar (không gửi email/mật khẩu).</small>
+          </div>
         </div>
 
         <label class="checkbox-row">
@@ -310,6 +337,7 @@
 
   <script defer src="./js/crypto.js"></script>
   <script defer src="./js/gist.js"></script>
+  <script defer src="./js/reminder.js"></script>
   <script defer src="./js/app.js"></script>
 </body>
 </html>

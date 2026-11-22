@@ -23,6 +23,7 @@ Web siêu tối giản để lưu trữ thông tin **Email & Tài khoản cá nh
 ## Tính năng chính
 
 - Thêm / Sửa / Xóa / Ghim tài khoản (Email, Mạng xã hội, Công việc, Tài chính, Dev/Cloud, Khác).
+- Đặt lịch hẹn nhắc nhở (VD: ngày cần hủy gói dùng thử) kèm cảnh báo trên web và nút đẩy 1-click sang **Google Calendar** (chỉ gửi tiêu đề & nội dung nhắc, không lộ mật khẩu).
 - Tạo mật khẩu mạnh ngẫu nhiên (`crypto.getRandomValues`).
 - Tìm kiếm không dấu tiếng Việt, sao chép nhanh Email & Mật khẩu.
 - Cảnh báo nếu phát hiện Gist vừa được chỉnh sửa từ thiết bị khác trước khi ghi đè.

@@ -20,6 +20,7 @@
 }
 
 [data-theme="dark"] {
+  color-scheme: dark;
   --bg: #0b0f17;
   --surface: #131926;
   --surface-subtle: #1b2335;
@@ -159,6 +160,7 @@ code {
 input[type="text"],
 input[type="password"],
 input[type="search"],
+input[type="datetime-local"],
 select,
 textarea {
   width: 100%;
@@ -739,6 +741,142 @@ textarea:focus {
 .danger-zone {
   border-bottom: none;
   padding-bottom: 0;
+}
+
+/* REMINDERS & GOOGLE CALENDAR */
+.due-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn);
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-size: 0.86rem;
+  font-weight: 500;
+  margin-bottom: 14px;
+}
+
+.due-banner.has-overdue {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+}
+
+.due-banner .ghost-btn {
+  padding: 5px 11px;
+}
+
+.reminder-box {
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.reminder-box .field {
+  margin-bottom: 8px;
+}
+
+.reminder-box-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.link-muted {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.link-muted:hover {
+  color: var(--danger);
+}
+
+.reminder-box-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.reminder-box-actions .ghost-btn {
+  padding: 6px 12px;
+}
+
+.card-reminder {
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  border: 1px solid var(--border);
+  background: var(--surface-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.card-reminder.state-overdue {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+}
+
+.card-reminder.state-soon {
+  background: var(--warn-bg);
+  border-color: var(--warn);
+}
+
+.card-reminder.state-done {
+  opacity: 0.72;
+}
+
+.card-reminder-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.card-reminder-badge {
+  font-weight: 600;
+}
+
+.card-reminder-note {
+  color: var(--text);
+}
+
+.card-reminder-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.gcal-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--primary);
+  text-decoration: none;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.gcal-link:hover {
+  border-color: var(--primary);
 }
 
 /* TOAST */

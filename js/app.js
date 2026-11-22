@@ -15,6 +15,14 @@
     updateVaultGist,
   } = window.MyNoteGist;
 
+  const {
+    toDatetimeLocalValue,
+    fromDatetimeLocalValue,
+    formatReminderDate,
+    getReminderStatus,
+    buildGoogleCalendarUrl,
+  } = window.MyNoteReminder;
+
   const STORAGE_KEYS = {
     PAT: 'my_note_pat',
     GIST_ID: 'my_note_gist_id',
@@ -75,6 +83,10 @@
     searchInput: $('search-input'),
     addItemBtn: $('add-item-btn'),
     categoryFilters: $('category-filters'),
+    filterUpcomingBtn: $('filter-upcoming-btn'),
+    dueBanner: $('due-banner'),
+    dueBannerText: $('due-banner-text'),
+    dueBannerBtn: $('due-banner-btn'),
     itemsCount: $('items-count'),
     itemsList: $('items-list'),
     emptyState: $('empty-state'),
@@ -95,6 +107,10 @@
     genPwBtn: $('gen-pw-btn'),
     itemUrl: $('item-url'),
     itemNotes: $('item-notes'),
+    itemRemindAt: $('item-remind-at'),
+    itemRemindNote: $('item-remind-note'),
+    clearRemindBtn: $('clear-remind-btn'),
+    modalGcalBtn: $('modal-gcal-btn'),
     itemPinned: $('item-pinned'),
     saveItemBtn: $('save-item-btn'),
 
@@ -287,6 +303,9 @@
   function sanitizeItem(raw) {
     const now = new Date().toISOString();
     const category = CATEGORY_LABELS[raw?.category] ? raw.category : 'other';
+    const rawRemindAt = typeof raw?.remindAt === 'string' ? raw.remindAt.trim() : '';
+    const remindAt = rawRemindAt && !Number.isNaN(Date.parse(rawRemindAt)) ? rawRemindAt : '';
+
     return {
       id: typeof raw?.id === 'string' && raw.id.trim() ? raw.id.trim() : generateId(),
       title: String(raw?.title || 'Chưa đặt tên').trim(),
@@ -295,6 +314,9 @@
       password: String(raw?.password || ''),
       url: String(raw?.url || '').trim(),
       notes: String(raw?.notes || ''),
+      remindAt,
+      remindNote: String(raw?.remindNote || '').trim(),
+      remindDone: Boolean(raw?.remindDone && remindAt),
       pinned: Boolean(raw?.pinned),
       createdAt: raw?.createdAt || now,
       updatedAt: raw?.updatedAt || now,
@@ -523,23 +545,78 @@
 
   /* ------------------------- RENDER DANH SÁCH ------------------------- */
 
+  function setActiveFilter(filterName) {
+    state.filter = filterName || 'all';
+    for (const btn of els.categoryFilters.querySelectorAll('.chip')) {
+      btn.classList.toggle('active', btn.dataset.filter === state.filter);
+    }
+    renderItems();
+  }
+
+  function updateReminderSummary() {
+    let activeCount = 0;
+    let overdueCount = 0;
+    let soonCount = 0;
+
+    for (const item of state.items) {
+      const status = getReminderStatus(item);
+      if (status.state === 'overdue') {
+        activeCount += 1;
+        overdueCount += 1;
+      } else if (status.state === 'soon') {
+        activeCount += 1;
+        soonCount += 1;
+      } else if (status.state === 'scheduled') {
+        activeCount += 1;
+      }
+    }
+
+    els.filterUpcomingBtn.textContent =
+      activeCount > 0 ? `⏰ Có lịch hẹn (${activeCount})` : '⏰ Có lịch hẹn';
+
+    const urgentCount = overdueCount + soonCount;
+    if (urgentCount === 0 || state.filter === 'upcoming') {
+      els.dueBanner.classList.add('hidden');
+      els.dueBanner.classList.remove('has-overdue');
+      return;
+    }
+
+    const parts = [];
+    if (overdueCount > 0) parts.push(`${overdueCount} mục quá hạn`);
+    if (soonCount > 0) parts.push(`${soonCount} mục sắp đến hạn (trong 7 ngày tới)`);
+    els.dueBannerText.textContent = `⏰ Nhắc nhở: Có ${parts.join(' và ')}.`;
+    els.dueBanner.classList.toggle('has-overdue', overdueCount > 0);
+    els.dueBanner.classList.remove('hidden');
+  }
+
   function getFilteredItems() {
     const query = normalizeSearchText(state.search.trim());
 
     return state.items
       .filter((item) => {
         if (state.filter === 'pinned' && !item.pinned) return false;
-        if (state.filter !== 'all' && state.filter !== 'pinned' && item.category !== state.filter) {
+        if (state.filter === 'upcoming') {
+          if (!item.remindAt || item.remindDone) return false;
+        } else if (
+          state.filter !== 'all' &&
+          state.filter !== 'pinned' &&
+          item.category !== state.filter
+        ) {
           return false;
         }
         if (!query) return true;
 
         const haystack = normalizeSearchText(
-          `${item.title} ${item.username} ${item.url} ${item.notes} ${CATEGORY_LABELS[item.category] || ''}`
+          `${item.title} ${item.username} ${item.url} ${item.notes} ${item.remindNote || ''} ${
+            CATEGORY_LABELS[item.category] || ''
+          }`
         );
         return haystack.includes(query);
       })
       .sort((a, b) => {
+        if (state.filter === 'upcoming') {
+          return Date.parse(a.remindAt) - Date.parse(b.remindAt);
+        }
         if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
         return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
       });
@@ -582,7 +659,62 @@
     return row;
   }
 
+  function createReminderBlock(item) {
+    const status = getReminderStatus(item);
+    if (status.state === 'none') return null;
+
+    const box = document.createElement('div');
+    box.className = `card-reminder state-${status.state}`;
+
+    const top = document.createElement('div');
+    top.className = 'card-reminder-top';
+
+    const badge = document.createElement('span');
+    badge.className = 'card-reminder-badge';
+    const prefix =
+      status.state === 'overdue'
+        ? '⚠ Quá hạn'
+        : status.state === 'done'
+          ? '✓ Đã xong'
+          : `⏰ ${status.label}`;
+    badge.textContent = `${prefix}: ${formatReminderDate(item.remindAt)}`;
+    top.appendChild(badge);
+    box.appendChild(top);
+
+    if (item.remindNote) {
+      const note = document.createElement('div');
+      note.className = 'card-reminder-note';
+      note.textContent = item.remindNote;
+      box.appendChild(note);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'card-reminder-actions';
+
+    const gcalUrl = buildGoogleCalendarUrl(item);
+    if (gcalUrl) {
+      const gcalLink = document.createElement('a');
+      gcalLink.className = 'gcal-link';
+      gcalLink.href = gcalUrl;
+      gcalLink.target = '_blank';
+      gcalLink.rel = 'noopener noreferrer';
+      gcalLink.textContent = '📅 Google Calendar';
+      actions.appendChild(gcalLink);
+    }
+
+    const doneBtn = document.createElement('button');
+    doneBtn.type = 'button';
+    doneBtn.className = 'copy-pill';
+    doneBtn.textContent = item.remindDone ? '↺ Nhắc lại' : '✓ Đã xong';
+    doneBtn.addEventListener('click', () => toggleReminderDone(item.id));
+    actions.appendChild(doneBtn);
+
+    box.appendChild(actions);
+    return box;
+  }
+
   function renderItems() {
+    updateReminderSummary();
     const filtered = getFilteredItems();
     const total = state.items.length;
     els.itemsCount.textContent =
@@ -723,6 +855,12 @@
         card.appendChild(notes);
       }
 
+      // Reminder & Google Calendar
+      const reminderBlock = createReminderBlock(item);
+      if (reminderBlock) {
+        card.appendChild(reminderBlock);
+      }
+
       fragment.appendChild(card);
     }
 
@@ -730,6 +868,12 @@
   }
 
   /* ------------------------- THÊM / SỬA / GHIM / XÓA ------------------------- */
+
+  function syncModalReminderControls() {
+    const hasRemindDate = Boolean(els.itemRemindAt.value && els.itemRemindAt.value.trim());
+    els.clearRemindBtn.classList.toggle('hidden', !hasRemindDate);
+    els.modalGcalBtn.classList.toggle('hidden', !hasRemindDate);
+  }
 
   function openItemModal(item = null) {
     els.itemForm.reset();
@@ -745,15 +889,19 @@
       els.itemPassword.value = item.password;
       els.itemUrl.value = item.url;
       els.itemNotes.value = item.notes;
+      els.itemRemindAt.value = item.remindAt ? toDatetimeLocalValue(item.remindAt) : '';
+      els.itemRemindNote.value = item.remindNote || '';
       els.itemPinned.checked = Boolean(item.pinned);
     } else {
       els.itemModalTitle.textContent = 'Thêm tài khoản mới';
       els.itemId.value = '';
-      els.itemCategory.value =
-        state.filter !== 'all' && state.filter !== 'pinned' ? state.filter : 'email';
+      els.itemCategory.value = CATEGORY_LABELS[state.filter] ? state.filter : 'email';
+      els.itemRemindAt.value = '';
+      els.itemRemindNote.value = '';
       els.itemPinned.checked = false;
     }
 
+    syncModalReminderControls();
     els.itemModal.classList.remove('hidden');
     setTimeout(() => els.itemTitle.focus(), 30);
   }
@@ -776,6 +924,11 @@
     const now = new Date().toISOString();
     const existing = editingId ? state.items.find((x) => x.id === editingId) : null;
 
+    const remindAt = fromDatetimeLocalValue(els.itemRemindAt.value);
+    const remindNote = els.itemRemindNote.value.trim();
+    const remindChanged = !existing || existing.remindAt !== remindAt;
+    const remindDone = remindAt ? (remindChanged ? false : Boolean(existing.remindDone)) : false;
+
     const nextItem = {
       id: existing ? existing.id : generateId(),
       title,
@@ -784,6 +937,9 @@
       password: els.itemPassword.value,
       url: els.itemUrl.value.trim(),
       notes: els.itemNotes.value.trim(),
+      remindAt,
+      remindNote,
+      remindDone,
       pinned: els.itemPinned.checked,
       createdAt: existing ? existing.createdAt : now,
       updatedAt: now,
@@ -815,22 +971,38 @@
     }
   }
 
-  async function togglePinItem(itemId) {
+  async function updateSingleItem(itemId, updater, errorMessage) {
     if (state.busy) return;
     state.busy = true;
     const now = new Date().toISOString();
     const nextItems = state.items.map((item) =>
-      item.id === itemId ? { ...item, pinned: !item.pinned, updatedAt: now } : item
+      item.id === itemId ? { ...item, ...updater(item), updatedAt: now } : item
     );
 
     try {
       await persistItemsToGist(nextItems);
     } catch (err) {
       setSyncIndicator('error', 'Lỗi lưu');
-      showToast(err.message || 'Không thể cập nhật trạng thái ghim.', true);
+      showToast(err.message || errorMessage, true);
     } finally {
       state.busy = false;
     }
+  }
+
+  function togglePinItem(itemId) {
+    return updateSingleItem(
+      itemId,
+      (item) => ({ pinned: !item.pinned }),
+      'Không thể cập nhật trạng thái ghim.'
+    );
+  }
+
+  function toggleReminderDone(itemId) {
+    return updateSingleItem(
+      itemId,
+      (item) => ({ remindDone: !item.remindDone }),
+      'Không thể cập nhật trạng thái nhắc nhở.'
+    );
   }
 
   function openDeleteModal(item) {
@@ -1045,18 +1217,38 @@
     els.categoryFilters.addEventListener('click', (e) => {
       const chip = e.target.closest('.chip');
       if (!chip) return;
-      state.filter = chip.dataset.filter || 'all';
-      for (const btn of els.categoryFilters.querySelectorAll('.chip')) {
-        btn.classList.toggle('active', btn === chip);
-      }
-      renderItems();
+      setActiveFilter(chip.dataset.filter || 'all');
     });
+
+    els.dueBannerBtn.addEventListener('click', () => setActiveFilter('upcoming'));
 
     els.addItemBtn.addEventListener('click', () => openItemModal(null));
     els.emptyAddBtn.addEventListener('click', () => openItemModal(null));
     els.closeItemModalBtn.addEventListener('click', closeItemModal);
     els.cancelItemBtn.addEventListener('click', closeItemModal);
     els.itemForm.addEventListener('submit', handleSaveItem);
+
+    els.itemRemindAt.addEventListener('input', syncModalReminderControls);
+    els.clearRemindBtn.addEventListener('click', () => {
+      els.itemRemindAt.value = '';
+      els.itemRemindNote.value = '';
+      syncModalReminderControls();
+    });
+    els.modalGcalBtn.addEventListener('click', () => {
+      const remindAt = fromDatetimeLocalValue(els.itemRemindAt.value);
+      if (!remindAt) {
+        showToast('Vui lòng chọn Ngày & giờ nhắc trước.', true);
+        return;
+      }
+      const gcalUrl = buildGoogleCalendarUrl({
+        title: els.itemTitle.value.trim() || 'Tài khoản My Note',
+        remindAt,
+        remindNote: els.itemRemindNote.value.trim(),
+      });
+      if (gcalUrl) {
+        window.open(gcalUrl, '_blank', 'noopener,noreferrer');
+      }
+    });
 
     els.genPwBtn.addEventListener('click', () => {
       els.itemPassword.value = generateStrongPassword(18);
