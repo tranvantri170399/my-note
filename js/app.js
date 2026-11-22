@@ -27,7 +27,11 @@
     PAT: 'my_note_pat',
     GIST_ID: 'my_note_gist_id',
     THEME: 'my_note_theme',
+    AUTO_LOCK_MIN: 'my_note_autolock_minutes',
   };
+
+  const VALID_AUTOLOCK_MINUTES = new Set([0, 1, 5, 10, 30]);
+  const DEFAULT_AUTOLOCK_MINUTES = 5;
 
   const CATEGORY_LABELS = {
     email: 'Email',
@@ -52,11 +56,16 @@
     revealedIds: new Set(),
     pendingDeleteId: null,
     busy: false,
+    autoLockMinutes: DEFAULT_AUTOLOCK_MINUTES,
+    lastActivityAt: 0,
+    lastActivityStampAt: 0,
+    autoLockIntervalId: null,
   };
 
   const $ = (id) => document.getElementById(id);
 
   const els = {
+    themeColorMeta: $('theme-color-meta'),
     authView: $('auth-view'),
     vaultView: $('vault-view'),
     authThemeBtn: $('auth-theme-btn'),
@@ -127,6 +136,7 @@
     newMasterPw: $('new-master-pw'),
     confirmMasterPw: $('confirm-master-pw'),
     changePwSubmitBtn: $('change-pw-submit-btn'),
+    autolockSelect: $('autolock-select'),
     logoutForgetBtn: $('logout-forget-btn'),
 
     deleteModal: $('delete-modal'),
@@ -253,6 +263,9 @@
     const resolved = theme === 'light' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', resolved);
     localStorage.setItem(STORAGE_KEYS.THEME, resolved);
+    if (els.themeColorMeta) {
+      els.themeColorMeta.setAttribute('content', resolved === 'dark' ? '#0b0f17' : '#f8fafc');
+    }
   }
 
   function toggleTheme() {
@@ -296,6 +309,77 @@
     els.gistIdInput.value = '';
     els.savedTokenBanner.classList.add('hidden');
     showToast('Đã xóa Token khỏi localStorage.');
+  }
+
+  /* ------------------------- TỰ ĐỘNG KHÓA (AUTO-LOCK) ------------------------- */
+
+  function loadAutoLockMinutes() {
+    const raw = localStorage.getItem(STORAGE_KEYS.AUTO_LOCK_MIN);
+    if (raw === null) return DEFAULT_AUTOLOCK_MINUTES;
+    const parsed = Number(raw);
+    return VALID_AUTOLOCK_MINUTES.has(parsed) ? parsed : DEFAULT_AUTOLOCK_MINUTES;
+  }
+
+  function updateLockButtonTitle() {
+    els.lockBtn.title =
+      state.autoLockMinutes > 0
+        ? `Khóa kho ngay lập tức (Tự khóa sau ${state.autoLockMinutes} phút)`
+        : 'Khóa kho ngay lập tức (Tự động khóa đang tắt)';
+  }
+
+  function isVaultUnlocked() {
+    return Boolean(state.masterPassword && !els.vaultView.classList.contains('hidden'));
+  }
+
+  function stopAutoLockWatcher() {
+    if (state.autoLockIntervalId) {
+      clearInterval(state.autoLockIntervalId);
+      state.autoLockIntervalId = null;
+    }
+  }
+
+  function checkAutoLock() {
+    if (!isVaultUnlocked() || state.autoLockMinutes <= 0 || state.busy) return false;
+    const limitMs = state.autoLockMinutes * 60 * 1000;
+    if (Date.now() - state.lastActivityAt >= limitMs) {
+      lockVault();
+      showToast(`Đã tự động khóa sau ${state.autoLockMinutes} phút không thao tác.`);
+      return true;
+    }
+    return false;
+  }
+
+  function startAutoLockWatcher() {
+    stopAutoLockWatcher();
+    state.lastActivityAt = Date.now();
+    state.lastActivityStampAt = state.lastActivityAt;
+    updateLockButtonTitle();
+    if (state.autoLockMinutes > 0 && isVaultUnlocked()) {
+      state.autoLockIntervalId = setInterval(checkAutoLock, 5000);
+    }
+  }
+
+  function recordUserActivity() {
+    if (!isVaultUnlocked()) return;
+    if (checkAutoLock()) return;
+    const now = Date.now();
+    if (now - state.lastActivityStampAt < 1000) return;
+    state.lastActivityStampAt = now;
+    state.lastActivityAt = now;
+  }
+
+  function setAutoLockMinutes(minutes) {
+    const parsed = Number(minutes);
+    const next = VALID_AUTOLOCK_MINUTES.has(parsed) ? parsed : DEFAULT_AUTOLOCK_MINUTES;
+    state.autoLockMinutes = next;
+    localStorage.setItem(STORAGE_KEYS.AUTO_LOCK_MIN, String(next));
+    if (els.autolockSelect) {
+      els.autolockSelect.value = String(next);
+    }
+    startAutoLockWatcher();
+    showToast(
+      next > 0 ? `Sẽ tự động khóa sau ${next} phút không thao tác.` : 'Đã tắt tự động khóa.'
+    );
   }
 
   /* ------------------------- CHUẨN HÓA DỮ LIỆU VAULT ------------------------- */
@@ -438,6 +522,7 @@
       els.authView.classList.add('hidden');
       els.vaultView.classList.remove('hidden');
       renderItems();
+      startAutoLockWatcher();
 
       if (state.isPublic) {
         showToast('Cảnh báo: Gist này đang ở chế độ Public!', true);
@@ -519,6 +604,7 @@
   }
 
   function lockVault() {
+    stopAutoLockWatcher();
     state.token = '';
     state.gistId = '';
     state.htmlUrl = '';
@@ -1047,6 +1133,9 @@
   function openSettingsModal() {
     updateGistHeaderInfo();
     els.changePwForm.reset();
+    if (els.autolockSelect) {
+      els.autolockSelect.value = String(state.autoLockMinutes);
+    }
     els.settingsModal.classList.remove('hidden');
   }
 
@@ -1266,10 +1355,24 @@
     els.importBtn.addEventListener('click', () => els.importFileInput.click());
     els.importFileInput.addEventListener('change', handleImportFile);
     els.changePwForm.addEventListener('submit', handleChangeMasterPassword);
+    els.autolockSelect.addEventListener('change', (e) => {
+      setAutoLockMinutes(e.target.value);
+    });
     els.logoutForgetBtn.addEventListener('click', () => {
       clearSavedCredentials();
       lockVault();
     });
+
+    // Theo dõi thao tác người dùng và khi mở lại tab/điện thoại để tự động khóa
+    for (const evt of ['pointerdown', 'keydown', 'touchstart', 'scroll', 'mousemove']) {
+      document.addEventListener(evt, recordUserActivity, { passive: true });
+    }
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        checkAutoLock();
+      }
+    });
+    window.addEventListener('focus', checkAutoLock);
 
     els.cancelDeleteBtn.addEventListener('click', closeDeleteModal);
     els.confirmDeleteBtn.addEventListener('click', handleConfirmDelete);
@@ -1312,10 +1415,24 @@
     });
   }
 
+  function registerServiceWorker() {
+    if (
+      'serviceWorker' in navigator &&
+      (location.protocol === 'https:' ||
+        location.hostname === 'localhost' ||
+        location.hostname === '127.0.0.1')
+    ) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+  }
+
   function init() {
     applyTheme(localStorage.getItem(STORAGE_KEYS.THEME) || 'dark');
+    state.autoLockMinutes = loadAutoLockMinutes();
+    updateLockButtonTitle();
     loadSavedCredentials();
     bindEvents();
+    registerServiceWorker();
   }
 
   init();

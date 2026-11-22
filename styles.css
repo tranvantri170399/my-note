@@ -333,7 +333,8 @@ textarea:focus {
 .vault-wrapper {
   max-width: 960px;
   margin: 0 auto;
-  padding: 0 18px 60px;
+  padding: env(safe-area-inset-top) max(18px, env(safe-area-inset-right))
+    calc(60px + env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
 }
 
 .topbar {

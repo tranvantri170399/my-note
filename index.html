@@ -2,8 +2,18 @@
 <html lang="vi" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>My Note Vault — Lưu trữ Mail & Tài khoản (GitHub Gist)</title>
+  <meta name="description" content="Lưu trữ Email & Tài khoản cá nhân mã hóa đầu cuối AES-256-GCM trên Private GitHub Gist." />
+  <meta name="theme-color" id="theme-color-meta" content="#0b0f17" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="My Note" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
@@ -305,6 +315,18 @@
           <input type="password" id="confirm-master-pw" placeholder="Nhập lại mật khẩu mới" required />
           <button type="submit" id="change-pw-submit-btn" class="btn btn-outline">Cập nhật khóa mã hóa</button>
         </form>
+      </div>
+
+      <div class="settings-section">
+        <h3>Tự động khóa (Auto-lock)</h3>
+        <p class="section-desc">Tự khóa kho và xóa dữ liệu giải mã khỏi bộ nhớ khi không thao tác.</p>
+        <select id="autolock-select" aria-label="Thời gian tự động khóa">
+          <option value="1">Sau 1 phút</option>
+          <option value="5">Sau 5 phút (Khuyên dùng)</option>
+          <option value="10">Sau 10 phút</option>
+          <option value="30">Sau 30 phút</option>
+          <option value="0">Tắt tự động khóa</option>
+        </select>
       </div>
 
       <div class="settings-section danger-zone">

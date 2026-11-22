@@ -1,0 +1,26 @@
+{
+  "name": "My Note Vault",
+  "short_name": "My Note",
+  "description": "Lưu trữ Email & Tài khoản cá nhân mã hóa đầu cuối AES-256-GCM trên Private GitHub Gist.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0b0f17",
+  "theme_color": "#0b0f17",
+  "lang": "vi",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
