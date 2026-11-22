@@ -79,42 +79,74 @@
       </p>
 
       <div id="saved-token-banner" class="saved-banner hidden">
-        <span class="saved-banner-text"><svg class="ic ic-sm"><use href="#i-shield"/></svg> Đã nhớ GitHub Token trên máy này</span>
-        <button type="button" id="clear-saved-token-btn" class="link-danger">Xóa Token</button>
+        <span class="saved-banner-text"><svg class="ic ic-sm"><use href="#i-shield"/></svg> Đã nhớ GitHub Token</span>
+        <div class="saved-banner-actions">
+          <button type="button" id="edit-saved-token-btn" class="link-primary">Đổi Token</button>
+          <button type="button" id="clear-saved-token-btn" class="link-danger">Xóa</button>
+        </div>
       </div>
 
-      <form id="auth-form" autocomplete="off">
-        <div class="field">
-          <label for="pat-input">GitHub Personal Access Token (PAT)</label>
-          <div class="input-wrap">
-            <input type="password" id="pat-input" placeholder="ghp_... hoặc github_pat_..." required spellcheck="false" />
-            <button type="button" id="toggle-pat-btn" class="input-icon-btn" tabindex="-1" aria-label="Hiện Token" title="Hiện / Ẩn">
-              <svg class="ic"><use href="#i-eye"/></svg>
-            </button>
-          </div>
-          <small class="hint">Chỉ cần quyền <code>gist</code>. Chỉ lưu tạm ở <code>localStorage</code> máy bạn.</small>
-        </div>
+      <form id="auth-form" autocomplete="on">
+        <input
+          type="text"
+          name="username"
+          autocomplete="username"
+          value="My Note Vault"
+          tabindex="-1"
+          aria-hidden="true"
+          class="autofill-username"
+        />
 
-        <div class="field">
-          <label for="gist-id-input">Gist ID hoặc URL <span class="optional">(Tùy chọn)</span></label>
-          <input type="text" id="gist-id-input" placeholder="Để trống: tự tìm hoặc tạo mới" spellcheck="false" />
+        <div id="pat-fields">
+          <div class="field">
+            <label for="pat-input">GitHub Personal Access Token (PAT)</label>
+            <div class="input-wrap">
+              <input
+                type="password"
+                id="pat-input"
+                name="github_pat"
+                autocomplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                placeholder="ghp_... hoặc github_pat_..."
+                required
+                spellcheck="false"
+              />
+              <button type="button" id="toggle-pat-btn" class="input-icon-btn" tabindex="-1" aria-label="Hiện Token" title="Hiện / Ẩn">
+                <svg class="ic"><use href="#i-eye"/></svg>
+              </button>
+            </div>
+            <small class="hint">Chỉ cần quyền <code>gist</code>. Chỉ lưu tạm ở <code>localStorage</code> máy bạn.</small>
+          </div>
+
+          <div class="field">
+            <label for="gist-id-input">Gist ID hoặc URL <span class="optional">(Tùy chọn)</span></label>
+            <input type="text" id="gist-id-input" name="gist_id" autocomplete="off" placeholder="Để trống: tự tìm hoặc tạo mới" spellcheck="false" />
+          </div>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="remember-pat-checkbox" checked />
+            <span>Ghi nhớ Token & Gist ID trên thiết bị này</span>
+          </label>
         </div>
 
         <div class="field">
           <label for="master-password-input">Master Password</label>
           <div class="input-wrap">
-            <input type="password" id="master-password-input" placeholder="Mật khẩu chủ của kho" required />
+            <input
+              type="password"
+              id="master-password-input"
+              name="password"
+              autocomplete="current-password"
+              placeholder="Mật khẩu chủ của kho"
+              required
+            />
             <button type="button" id="toggle-master-btn" class="input-icon-btn" tabindex="-1" aria-label="Hiện Master Password" title="Hiện / Ẩn">
               <svg class="ic"><use href="#i-eye"/></svg>
             </button>
           </div>
-          <small class="hint">Master Password <strong>không bao giờ</strong> được lưu hay gửi lên mạng.</small>
+          <small class="hint">Master Password <strong>không bao giờ</strong> lưu vào <code>localStorage</code> hay gửi lên mạng.</small>
         </div>
-
-        <label class="checkbox-row">
-          <input type="checkbox" id="remember-pat-checkbox" checked />
-          <span>Ghi nhớ Token & Gist ID trên thiết bị này</span>
-        </label>
 
         <div id="auth-error" class="alert-error hidden"></div>
 
@@ -123,7 +155,7 @@
         </button>
       </form>
 
-      <details class="guide-box">
+      <details id="auth-guide" class="guide-box">
         <summary>Hướng dẫn lấy GitHub Token (30 giây)</summary>
         <ol>
           <li>Vào <strong>GitHub Settings → Developer settings → Personal access tokens</strong>.</li>
@@ -389,9 +421,18 @@
 
       <div class="settings-section">
         <h3>Đổi Master Password</h3>
-        <form id="change-pw-form" class="inline-pw-form">
-          <input type="password" id="new-master-pw" placeholder="Master Password mới" required />
-          <input type="password" id="confirm-master-pw" placeholder="Nhập lại mật khẩu mới" required />
+        <form id="change-pw-form" class="inline-pw-form" autocomplete="on">
+          <input
+            type="text"
+            name="username"
+            autocomplete="username"
+            value="My Note Vault"
+            tabindex="-1"
+            aria-hidden="true"
+            class="autofill-username"
+          />
+          <input type="password" id="new-master-pw" name="new_password" autocomplete="new-password" placeholder="Master Password mới" required />
+          <input type="password" id="confirm-master-pw" name="confirm_password" autocomplete="new-password" placeholder="Nhập lại mật khẩu mới" required />
           <button type="submit" id="change-pw-submit-btn" class="btn btn-outline">Cập nhật khóa mã hóa</button>
         </form>
       </div>

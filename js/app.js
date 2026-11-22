@@ -74,8 +74,10 @@
     authThemeBtn: $('auth-theme-btn'),
     themeToggleBtn: $('theme-toggle-btn'),
     savedTokenBanner: $('saved-token-banner'),
+    editSavedTokenBtn: $('edit-saved-token-btn'),
     clearSavedTokenBtn: $('clear-saved-token-btn'),
     authForm: $('auth-form'),
+    patFields: $('pat-fields'),
     patInput: $('pat-input'),
     togglePatBtn: $('toggle-pat-btn'),
     gistIdInput: $('gist-id-input'),
@@ -84,6 +86,7 @@
     rememberPatCheckbox: $('remember-pat-checkbox'),
     authError: $('auth-error'),
     authSubmitBtn: $('auth-submit-btn'),
+    authGuide: $('auth-guide'),
 
     syncDot: $('sync-dot'),
     syncStatus: $('sync-status'),
@@ -477,6 +480,16 @@
     applyTheme(current === 'dark' ? 'light' : 'dark');
   }
 
+  function setPatFieldsVisible(visible) {
+    els.patFields.classList.toggle('hidden', !visible);
+    if (els.authGuide) {
+      els.authGuide.classList.toggle('hidden', !visible);
+    }
+    if (els.editSavedTokenBtn) {
+      els.editSavedTokenBtn.textContent = visible ? 'Thu gọn' : 'Đổi Token';
+    }
+  }
+
   function loadSavedCredentials() {
     const savedPat = localStorage.getItem(STORAGE_KEYS.PAT) || '';
     const savedGistId = localStorage.getItem(STORAGE_KEYS.GIST_ID) || '';
@@ -486,10 +499,12 @@
 
     if (savedPat) {
       els.savedTokenBanner.classList.remove('hidden');
+      setPatFieldsVisible(false);
       els.rememberPatCheckbox.checked = true;
       setTimeout(() => els.masterPasswordInput.focus(), 50);
     } else {
       els.savedTokenBanner.classList.add('hidden');
+      setPatFieldsVisible(true);
       setTimeout(() => els.patInput.focus(), 50);
     }
   }
@@ -512,6 +527,8 @@
     els.patInput.value = '';
     els.gistIdInput.value = '';
     els.savedTokenBanner.classList.add('hidden');
+    setPatFieldsVisible(true);
+    setTimeout(() => els.patInput.focus(), 30);
     showToast('Đã xóa Token khỏi localStorage.');
   }
 
@@ -653,7 +670,9 @@
     const masterPassword = els.masterPasswordInput.value;
 
     if (!token) {
+      setPatFieldsVisible(true);
       setAuthError('Vui lòng nhập GitHub Personal Access Token (PAT).');
+      els.patInput.focus();
       return;
     }
     if (!masterPassword) {
@@ -733,6 +752,12 @@
         showToast('Cảnh báo: Gist này đang ở chế độ Public!', true);
       }
     } catch (err) {
+      if (err && err.code === 'WRONG_PASSWORD') {
+        els.masterPasswordInput.focus();
+        els.masterPasswordInput.select();
+      } else {
+        setPatFieldsVisible(true);
+      }
       setAuthError(err.message || 'Không thể mở khóa kho dữ liệu.');
     } finally {
       state.busy = false;
@@ -1682,6 +1707,15 @@
   function bindEvents() {
     els.authThemeBtn.addEventListener('click', toggleTheme);
     els.themeToggleBtn.addEventListener('click', toggleTheme);
+    els.editSavedTokenBtn.addEventListener('click', () => {
+      const willShow = els.patFields.classList.contains('hidden');
+      setPatFieldsVisible(willShow);
+      if (willShow) {
+        els.patInput.focus();
+      } else {
+        els.masterPasswordInput.focus();
+      }
+    });
     els.clearSavedTokenBtn.addEventListener('click', clearSavedCredentials);
 
     els.togglePatBtn.addEventListener('click', () =>

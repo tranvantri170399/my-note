@@ -141,6 +141,7 @@ code {
 }
 
 .auth-card {
+  position: relative;
   width: 100%;
   max-width: 440px;
   background: var(--bg-elev);
@@ -220,6 +221,22 @@ code {
   font-weight: 600;
 }
 
+.saved-banner-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.link-primary {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
 .link-danger {
   background: none;
   border: none;
@@ -227,6 +244,20 @@ code {
   font-weight: 600;
   cursor: pointer;
   font-size: 0.82rem;
+}
+
+.autofill-username {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0.001;
+  pointer-events: none;
+  border: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden;
 }
 
 .guide-box {
@@ -1545,6 +1576,7 @@ textarea:focus {
 }
 
 .inline-pw-form {
+  position: relative;
   display: grid;
   gap: 8px;
 }
