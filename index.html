@@ -17,22 +17,55 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
+  <!-- BỘ ICON SVG (dùng chung qua <use href="#i-...">) -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display: none" aria-hidden="true">
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a13.2 13.2 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.39-1.61"/><path d="m2 2 20 20"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/></symbol>
+  </svg>
+
   <noscript>
     <div style="padding: 20px; text-align: center; font-family: sans-serif;">
       Ứng dụng cần bật JavaScript để mã hóa và đồng bộ với GitHub Gist.
     </div>
   </noscript>
 
-  <!-- MÀN HÌNH MỞ KHÓA / ĐĂNG NHẬP -->
+  <!-- ===================== MÀN HÌNH MỞ KHÓA ===================== -->
   <main id="auth-view" class="auth-wrapper">
     <div class="auth-card">
       <div class="auth-header">
         <div class="brand-badge">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span class="brand-logo"><svg class="ic"><use href="#i-lock"/></svg></span>
           <span>My Note Vault</span>
         </div>
-        <button type="button" id="auth-theme-btn" class="icon-btn" title="Đổi giao diện Sáng/Tối" aria-label="Đổi giao diện">
-          ◐
+        <button type="button" id="auth-theme-btn" class="icon-btn theme-btn" title="Đổi giao diện Sáng/Tối" aria-label="Đổi giao diện">
+          <svg class="ic icon-sun"><use href="#i-sun"/></svg>
+          <svg class="ic icon-moon"><use href="#i-moon"/></svg>
         </button>
       </div>
 
@@ -42,58 +75,46 @@
       </p>
 
       <div id="saved-token-banner" class="saved-banner hidden">
-        <span>Đã nhớ GitHub Token trên trình duyệt này</span>
+        <span class="saved-banner-text"><svg class="ic ic-sm"><use href="#i-shield"/></svg> Đã nhớ GitHub Token trên máy này</span>
         <button type="button" id="clear-saved-token-btn" class="link-danger">Xóa Token</button>
       </div>
 
       <form id="auth-form" autocomplete="off">
         <div class="field">
           <label for="pat-input">GitHub Personal Access Token (PAT)</label>
-          <div class="input-group">
-            <input
-              type="password"
-              id="pat-input"
-              placeholder="ghp_... hoặc github_pat_..."
-              required
-              spellcheck="false"
-            />
-            <button type="button" id="toggle-pat-btn" class="ghost-btn" tabindex="-1">Hiện</button>
+          <div class="input-wrap">
+            <input type="password" id="pat-input" placeholder="ghp_... hoặc github_pat_..." required spellcheck="false" />
+            <button type="button" id="toggle-pat-btn" class="input-icon-btn" tabindex="-1" aria-label="Hiện Token" title="Hiện / Ẩn">
+              <svg class="ic"><use href="#i-eye"/></svg>
+            </button>
           </div>
-          <small class="hint">Chỉ cần cấp duy nhất quyền <code>gist</code>. Chỉ lưu tạm ở <code>localStorage</code> máy bạn.</small>
+          <small class="hint">Chỉ cần quyền <code>gist</code>. Chỉ lưu tạm ở <code>localStorage</code> máy bạn.</small>
         </div>
 
         <div class="field">
           <label for="gist-id-input">Gist ID hoặc URL <span class="optional">(Tùy chọn)</span></label>
-          <input
-            type="text"
-            id="gist-id-input"
-            placeholder="Để trống để tự tìm hoặc tự tạo Private Gist mới"
-            spellcheck="false"
-          />
+          <input type="text" id="gist-id-input" placeholder="Để trống: tự tìm hoặc tạo mới" spellcheck="false" />
         </div>
 
         <div class="field">
-          <label for="master-password-input">Master Password (Khóa giải mã)</label>
-          <div class="input-group">
-            <input
-              type="password"
-              id="master-password-input"
-              placeholder="Nhập mật khẩu chủ để mã hóa / giải mã..."
-              required
-            />
-            <button type="button" id="toggle-master-btn" class="ghost-btn" tabindex="-1">Hiện</button>
+          <label for="master-password-input">Master Password</label>
+          <div class="input-wrap">
+            <input type="password" id="master-password-input" placeholder="Mật khẩu chủ của kho" required />
+            <button type="button" id="toggle-master-btn" class="input-icon-btn" tabindex="-1" aria-label="Hiện Master Password" title="Hiện / Ẩn">
+              <svg class="ic"><use href="#i-eye"/></svg>
+            </button>
           </div>
-          <small class="hint">Master Password <strong>không bao giờ</strong> lưu xuống ổ cứng hay gửi lên mạng.</small>
+          <small class="hint">Master Password <strong>không bao giờ</strong> được lưu hay gửi lên mạng.</small>
         </div>
 
         <label class="checkbox-row">
           <input type="checkbox" id="remember-pat-checkbox" checked />
-          <span>Lưu tạm Token & Gist ID vào <code>localStorage</code> thiết bị này</span>
+          <span>Ghi nhớ Token & Gist ID trên thiết bị này</span>
         </label>
 
         <div id="auth-error" class="alert-error hidden"></div>
 
-        <button type="submit" id="auth-submit-btn" class="btn btn-primary btn-block">
+        <button type="submit" id="auth-submit-btn" class="btn btn-primary btn-block btn-lg">
           Mở khóa kho dữ liệu
         </button>
       </form>
@@ -101,64 +122,63 @@
       <details class="guide-box">
         <summary>Hướng dẫn lấy GitHub Token (30 giây)</summary>
         <ol>
-          <li>Vào <strong>GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)</strong> (hoặc Fine-grained tokens → Gists: Read &amp; Write).</li>
-          <li>Tạo token mới và chỉ tích chọn quyền <strong><code>gist</code></strong> (Create gists).</li>
-          <li>Dán Token vào ô trên và đặt một <strong>Master Password</strong>. Lần đầu web sẽ tự tạo một Private Gist chứa <code>data.json</code> đã mã hóa.</li>
+          <li>Vào <strong>GitHub Settings → Developer settings → Personal access tokens</strong>.</li>
+          <li><strong>Tokens (classic)</strong>: chỉ tích quyền <code>gist</code>. Hoặc <strong>Fine-grained</strong>: Account permissions → <strong>Gists: Read and write</strong>.</li>
+          <li>Dán Token vào ô trên và đặt <strong>Master Password</strong>. Lần đầu web sẽ tự tạo Private Gist chứa <code>data.json</code> đã mã hóa.</li>
         </ol>
       </details>
     </div>
   </main>
 
-  <!-- MÀN HÌNH CHÍNH (KHO TÀI KHOẢN) -->
+  <!-- ===================== MÀN HÌNH CHÍNH ===================== -->
   <div id="vault-view" class="vault-wrapper hidden">
     <header class="topbar">
       <div class="topbar-left">
         <div class="brand-title">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          <span>My Note Vault</span>
+          <span class="brand-logo"><svg class="ic"><use href="#i-lock"/></svg></span>
+          <span class="brand-name">My Note Vault</span>
         </div>
         <div class="sync-pill">
           <span id="sync-dot" class="dot dot-ok"></span>
           <span id="sync-status">Đã đồng bộ</span>
-          <span id="gist-visibility-badge" class="visibility-badge">🔒 Private</span>
-          <a id="gist-link" href="#" target="_blank" rel="noopener noreferrer" title="Xem file data.json trên GitHub Gist">Gist ↗</a>
+          <span id="gist-visibility-badge" class="visibility-badge">Private</span>
+          <a id="gist-link" href="#" target="_blank" rel="noopener noreferrer" title="Xem file data.json trên GitHub Gist" aria-label="Mở Gist">
+            <svg class="ic ic-sm"><use href="#i-external"/></svg>
+          </a>
         </div>
       </div>
 
       <div class="topbar-actions">
-        <button type="button" id="sync-btn" class="btn btn-ghost" title="Tải lại dữ liệu mới nhất từ Gist">
-          ↻ Đồng bộ
+        <button type="button" id="sync-btn" class="icon-btn" title="Đồng bộ lại từ Gist" aria-label="Đồng bộ">
+          <svg class="ic"><use href="#i-refresh"/></svg>
         </button>
-        <button type="button" id="backup-menu-btn" class="btn btn-ghost" title="Sao lưu data.json & Cài đặt">
-          Sao lưu & Cài đặt
+        <button type="button" id="theme-toggle-btn" class="icon-btn theme-btn" title="Đổi giao diện Sáng/Tối" aria-label="Đổi giao diện">
+          <svg class="ic icon-sun"><use href="#i-sun"/></svg>
+          <svg class="ic icon-moon"><use href="#i-moon"/></svg>
         </button>
-        <button type="button" id="theme-toggle-btn" class="icon-btn" title="Đổi giao diện Sáng/Tối" aria-label="Đổi giao diện">
-          ◐
+        <button type="button" id="backup-menu-btn" class="btn btn-ghost desktop-only" title="Sao lưu & Cài đặt">
+          <svg class="ic"><use href="#i-sliders"/></svg><span>Cài đặt</span>
         </button>
-        <button type="button" id="lock-btn" class="btn btn-outline" title="Khóa kho ngay lập tức">
-          Khóa
+        <button type="button" id="lock-btn" class="btn btn-outline desktop-only" title="Khóa kho ngay lập tức">
+          <svg class="ic"><use href="#i-lock"/></svg><span>Khóa</span>
         </button>
       </div>
     </header>
 
     <section class="toolbar">
       <div class="search-box">
-        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input
-          type="search"
-          id="search-input"
-          placeholder="Tìm theo tên dịch vụ, email, username, website, ghi chú... (Phím /)"
-        />
+        <svg class="ic search-icon"><use href="#i-search"/></svg>
+        <input type="search" id="search-input" placeholder="Tìm dịch vụ, email, website..." />
       </div>
-      <button type="button" id="add-item-btn" class="btn btn-primary">
-        + Thêm tài khoản
+      <button type="button" id="add-item-btn" class="btn btn-primary desktop-only">
+        <svg class="ic"><use href="#i-plus"/></svg><span>Thêm tài khoản</span>
       </button>
     </section>
 
     <nav id="category-filters" class="filter-bar" aria-label="Bộ lọc phân loại">
       <button type="button" class="chip active" data-filter="all">Tất cả</button>
-      <button type="button" class="chip" data-filter="pinned">★ Đã ghim</button>
-      <button type="button" id="filter-upcoming-btn" class="chip" data-filter="upcoming">⏰ Có lịch hẹn</button>
+      <button type="button" class="chip" data-filter="pinned"><svg class="ic ic-xs"><use href="#i-star"/></svg>Đã ghim</button>
+      <button type="button" id="filter-upcoming-btn" class="chip" data-filter="upcoming"><svg class="ic ic-xs"><use href="#i-clock"/></svg>Lịch hẹn<span id="upcoming-count" class="chip-count hidden"></span></button>
       <button type="button" class="chip" data-filter="email">Email</button>
       <button type="button" class="chip" data-filter="social">Mạng xã hội</button>
       <button type="button" class="chip" data-filter="work">Công việc</button>
@@ -168,8 +188,8 @@
     </nav>
 
     <div id="due-banner" class="due-banner hidden">
-      <span id="due-banner-text"></span>
-      <button type="button" id="due-banner-btn" class="ghost-btn">Xem lịch hẹn</button>
+      <span class="due-banner-main"><svg class="ic"><use href="#i-alert"/></svg><span id="due-banner-text"></span></span>
+      <button type="button" id="due-banner-btn" class="btn btn-sm btn-outline">Xem lịch hẹn</button>
     </div>
 
     <div class="list-meta">
@@ -179,17 +199,41 @@
     <section id="items-list" class="items-grid"></section>
 
     <div id="empty-state" class="empty-state hidden">
+      <div class="empty-icon"><svg class="ic"><use href="#i-inbox"/></svg></div>
       <p id="empty-state-text">Chưa có mục nào phù hợp.</p>
-      <button type="button" id="empty-add-btn" class="btn btn-outline">+ Thêm mail / tài khoản đầu tiên</button>
+      <button type="button" id="empty-add-btn" class="btn btn-primary">
+        <svg class="ic"><use href="#i-plus"/></svg><span>Thêm tài khoản đầu tiên</span>
+      </button>
     </div>
+
+    <!-- THANH ĐIỀU HƯỚNG DƯỚI ĐÁY (MOBILE) -->
+    <nav class="bottom-nav" aria-label="Điều hướng nhanh">
+      <button type="button" id="nav-search-btn" class="bottom-nav-btn">
+        <svg class="ic"><use href="#i-search"/></svg><span>Tìm</span>
+      </button>
+      <button type="button" id="nav-upcoming-btn" class="bottom-nav-btn">
+        <svg class="ic"><use href="#i-clock"/></svg><span>Lịch hẹn</span>
+        <span id="nav-upcoming-badge" class="nav-badge hidden"></span>
+      </button>
+      <button type="button" id="nav-add-btn" class="bottom-nav-add" aria-label="Thêm tài khoản">
+        <svg class="ic"><use href="#i-plus"/></svg>
+      </button>
+      <button type="button" id="nav-settings-btn" class="bottom-nav-btn">
+        <svg class="ic"><use href="#i-sliders"/></svg><span>Cài đặt</span>
+      </button>
+      <button type="button" id="nav-lock-btn" class="bottom-nav-btn">
+        <svg class="ic"><use href="#i-lock"/></svg><span>Khóa</span>
+      </button>
+    </nav>
   </div>
 
-  <!-- MODAL THÊM / SỬA TÀI KHOẢN -->
+  <!-- ===================== MODAL THÊM / SỬA ===================== -->
   <div id="item-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="item-modal-title">
     <div class="modal-card">
+      <div class="sheet-handle"></div>
       <div class="modal-header">
         <h2 id="item-modal-title">Thêm tài khoản mới</h2>
-        <button type="button" id="close-item-modal-btn" class="icon-btn" aria-label="Đóng">✕</button>
+        <button type="button" id="close-item-modal-btn" class="icon-btn" aria-label="Đóng"><svg class="ic"><use href="#i-x"/></svg></button>
       </div>
 
       <form id="item-form" autocomplete="off">
@@ -197,10 +241,9 @@
 
         <div class="form-row-2">
           <div class="field">
-            <label for="item-title">Tên dịch vụ / Tiêu đề *</label>
+            <label for="item-title">Tên dịch vụ *</label>
             <input type="text" id="item-title" placeholder="VD: Gmail chính, GitHub, Vietcombank..." required />
           </div>
-
           <div class="field">
             <label for="item-category">Phân loại</label>
             <select id="item-category">
@@ -216,94 +259,118 @@
 
         <div class="field">
           <label for="item-username">Email / Tên đăng nhập</label>
-          <input type="text" id="item-username" placeholder="example@gmail.com hoặc username" spellcheck="false" />
+          <input type="text" id="item-username" placeholder="example@gmail.com hoặc username" spellcheck="false" autocapitalize="off" />
         </div>
 
         <div class="field">
           <label for="item-password">Mật khẩu</label>
-          <div class="input-group">
-            <input type="password" id="item-password" placeholder="Nhập hoặc bấm Tạo mật khẩu mạnh" spellcheck="false" />
-            <button type="button" id="toggle-item-pw-btn" class="ghost-btn">Hiện</button>
-            <button type="button" id="gen-pw-btn" class="ghost-btn" title="Tạo mật khẩu ngẫu nhiên 18 ký tự">🎲 Tạo</button>
+          <div class="input-wrap has-2">
+            <input type="password" id="item-password" placeholder="Nhập hoặc bấm tạo mật khẩu mạnh" spellcheck="false" autocapitalize="off" />
+            <button type="button" id="toggle-item-pw-btn" class="input-icon-btn" aria-label="Hiện mật khẩu" title="Hiện / Ẩn">
+              <svg class="ic"><use href="#i-eye"/></svg>
+            </button>
+            <button type="button" id="gen-pw-btn" class="input-icon-btn second" aria-label="Tạo mật khẩu mạnh" title="Tạo mật khẩu ngẫu nhiên 18 ký tự">
+              <svg class="ic"><use href="#i-shuffle"/></svg>
+            </button>
+          </div>
+          <div id="pw-strength" class="pw-strength hidden">
+            <div class="pw-strength-bar"><span id="pw-strength-fill"></span></div>
+            <span id="pw-strength-label"></span>
           </div>
         </div>
 
         <div class="field">
-          <label for="item-url">Website / Đường dẫn <span class="optional">(Tùy chọn)</span></label>
-          <input type="text" id="item-url" placeholder="https://mail.google.com" spellcheck="false" />
+          <label for="item-url">Website <span class="optional">(Tùy chọn)</span></label>
+          <input type="text" id="item-url" placeholder="https://mail.google.com" spellcheck="false" autocapitalize="off" />
         </div>
 
         <div class="field">
           <label for="item-notes">Ghi chú / Mail khôi phục / Mã 2FA dự phòng</label>
-          <textarea id="item-notes" rows="3" placeholder="SĐT đăng ký, mail khôi phục, mã backup 2FA, câu hỏi bảo mật..."></textarea>
+          <textarea id="item-notes" rows="3" placeholder="SĐT đăng ký, mail khôi phục, mã backup 2FA..."></textarea>
         </div>
 
         <div class="reminder-box">
           <div class="reminder-box-head">
-            <span>⏰ Đặt hẹn nhắc / Ngày cần hủy <span class="optional">(Tùy chọn)</span></span>
-            <button type="button" id="clear-remind-btn" class="link-muted hidden">Xóa lịch hẹn</button>
+            <span class="reminder-box-title"><svg class="ic ic-sm"><use href="#i-clock"/></svg> Hẹn nhắc / Ngày cần hủy <span class="optional">(Tùy chọn)</span></span>
+            <button type="button" id="clear-remind-btn" class="link-muted hidden">Xóa lịch</button>
           </div>
           <div class="form-row-2">
             <div class="field">
-              <label for="item-remind-at">Ngày &amp; giờ nhắc</label>
+              <label for="item-remind-at">Ngày & giờ nhắc</label>
               <input type="datetime-local" id="item-remind-at" />
             </div>
             <div class="field">
               <label for="item-remind-note">Việc cần làm</label>
-              <input type="text" id="item-remind-note" placeholder="VD: Hủy gói dùng thử trước khi gia hạn" />
+              <input type="text" id="item-remind-note" placeholder="VD: Hủy gói dùng thử" />
             </div>
           </div>
           <div class="reminder-box-actions">
-            <button type="button" id="modal-gcal-btn" class="ghost-btn hidden">📅 Thêm vào Google Calendar</button>
-            <small class="hint">Chỉ gửi tiêu đề &amp; việc cần làm sang Google Calendar (không gửi email/mật khẩu).</small>
+            <button type="button" id="modal-gcal-btn" class="btn btn-sm btn-outline hidden">
+              <svg class="ic ic-sm"><use href="#i-calendar"/></svg><span>Thêm vào Google Calendar</span>
+            </button>
+            <small class="hint">Chỉ gửi tên dịch vụ & việc cần làm, không gửi email/mật khẩu.</small>
           </div>
         </div>
 
         <label class="checkbox-row">
           <input type="checkbox" id="item-pinned" />
-          <span>★ Ghim mục này lên đầu danh sách</span>
+          <span>Ghim mục này lên đầu danh sách</span>
         </label>
 
         <div class="modal-footer">
           <button type="button" id="cancel-item-btn" class="btn btn-ghost">Hủy</button>
-          <button type="submit" id="save-item-btn" class="btn btn-primary">Lưu & Mã hóa lên Gist</button>
+          <button type="submit" id="save-item-btn" class="btn btn-primary">Lưu & Mã hóa</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- MODAL SAO LƯU & CÀI ĐẶT -->
+  <!-- ===================== MODAL CÀI ĐẶT ===================== -->
   <div id="settings-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
     <div class="modal-card">
+      <div class="sheet-handle"></div>
       <div class="modal-header">
         <h2 id="settings-modal-title">Sao lưu & Cài đặt</h2>
-        <button type="button" id="close-settings-modal-btn" class="icon-btn" aria-label="Đóng">✕</button>
+        <button type="button" id="close-settings-modal-btn" class="icon-btn" aria-label="Đóng"><svg class="ic"><use href="#i-x"/></svg></button>
       </div>
 
       <div class="settings-section">
-        <h3>Thông tin GitHub Gist hiện tại <span id="display-gist-visibility" class="visibility-badge"></span></h3>
+        <h3>GitHub Gist hiện tại <span id="display-gist-visibility" class="visibility-badge"></span></h3>
         <div class="input-group">
           <input type="text" id="display-gist-id" readonly />
-          <button type="button" id="copy-gist-id-btn" class="ghost-btn">Copy ID</button>
+          <button type="button" id="copy-gist-id-btn" class="btn btn-outline btn-sm">Copy ID</button>
         </div>
-        <small class="hint">Lưu lại Gist ID này nếu muốn mở nhanh trên thiết bị khác.</small>
+        <small class="hint">Lưu lại Gist ID nếu muốn mở nhanh trên thiết bị khác.</small>
       </div>
 
       <div class="settings-section">
-        <h3>Sao lưu & Khôi phục (File JSON)</h3>
-        <p class="section-desc">Toàn bộ dữ liệu nằm gọn trong 1 file JSON. Khuyên dùng bản sao lưu đã mã hóa để an toàn tuyệt đối.</p>
-        <div class="btn-row">
-          <button type="button" id="export-encrypted-btn" class="btn btn-primary">
-            ⬇ Tải data.json (Đã mã hóa)
+        <h3>Tự động khóa</h3>
+        <p class="section-desc">Tự khóa kho và xóa dữ liệu giải mã khỏi bộ nhớ khi không thao tác.</p>
+        <select id="autolock-select" aria-label="Thời gian tự động khóa">
+          <option value="1">Sau 1 phút</option>
+          <option value="5">Sau 5 phút (Khuyên dùng)</option>
+          <option value="10">Sau 10 phút</option>
+          <option value="30">Sau 30 phút</option>
+          <option value="0">Tắt tự động khóa</option>
+        </select>
+      </div>
+
+      <div class="settings-section">
+        <h3>Sao lưu & Khôi phục</h3>
+        <p class="section-desc">Toàn bộ dữ liệu nằm gọn trong 1 file JSON. Nên dùng bản đã mã hóa.</p>
+        <div class="settings-list">
+          <button type="button" id="export-encrypted-btn" class="settings-item">
+            <svg class="ic"><use href="#i-download"/></svg>
+            <span><strong>Tải data.json (Đã mã hóa)</strong><small>An toàn để cất giữ ở bất kỳ đâu</small></span>
           </button>
-          <button type="button" id="export-plain-btn" class="btn btn-outline">
-            ⬇ Xuất JSON (Giải mã)
+          <button type="button" id="export-plain-btn" class="settings-item">
+            <svg class="ic"><use href="#i-download"/></svg>
+            <span><strong>Xuất JSON (Giải mã)</strong><small>Chứa mật khẩu dạng chữ thường</small></span>
           </button>
-        </div>
-        <div class="import-row">
           <input type="file" id="import-file-input" accept=".json,application/json" class="hidden" />
-          <button type="button" id="import-btn" class="btn btn-ghost">
-            ⬆ Nhập / Khôi phục từ file .json
+          <button type="button" id="import-btn" class="settings-item">
+            <svg class="ic"><use href="#i-upload"/></svg>
+            <span><strong>Nhập / Khôi phục từ file .json</strong><small>Gộp vào danh sách hiện tại</small></span>
           </button>
         </div>
       </div>
@@ -317,44 +384,46 @@
         </form>
       </div>
 
-      <div class="settings-section">
-        <h3>Tự động khóa (Auto-lock)</h3>
-        <p class="section-desc">Tự khóa kho và xóa dữ liệu giải mã khỏi bộ nhớ khi không thao tác.</p>
-        <select id="autolock-select" aria-label="Thời gian tự động khóa">
-          <option value="1">Sau 1 phút</option>
-          <option value="5">Sau 5 phút (Khuyên dùng)</option>
-          <option value="10">Sau 10 phút</option>
-          <option value="30">Sau 30 phút</option>
-          <option value="0">Tắt tự động khóa</option>
-        </select>
-      </div>
-
       <div class="settings-section danger-zone">
         <h3>Thiết bị này</h3>
-        <button type="button" id="logout-forget-btn" class="btn btn-danger">
-          Xóa Token khỏi localStorage & Đăng xuất
+        <button type="button" id="logout-forget-btn" class="btn btn-danger btn-block">
+          <svg class="ic"><use href="#i-logout"/></svg><span>Xóa Token & Đăng xuất</span>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL XÁC NHẬN XÓA -->
+  <!-- ===================== MODAL XÓA ===================== -->
   <div id="delete-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
     <div class="modal-card modal-sm">
-      <div class="modal-header">
-        <h2 id="delete-modal-title">Xóa tài khoản?</h2>
-      </div>
-      <p class="delete-desc">
-        Bạn có chắc muốn xóa <strong id="delete-item-name"></strong>? Thay đổi sẽ được cập nhật ngay lên Gist <code>data.json</code>.
+      <div class="dialog-icon danger"><svg class="ic"><use href="#i-trash"/></svg></div>
+      <h2 id="delete-modal-title" class="dialog-title">Xóa tài khoản?</h2>
+      <p class="dialog-message">
+        Bạn có chắc muốn xóa <strong id="delete-item-name"></strong>? Thay đổi sẽ được cập nhật ngay lên Gist.
       </p>
-      <div class="modal-footer">
+      <div class="modal-footer dialog-footer">
         <button type="button" id="cancel-delete-btn" class="btn btn-ghost">Hủy</button>
         <button type="button" id="confirm-delete-btn" class="btn btn-danger">Xóa vĩnh viễn</button>
       </div>
     </div>
   </div>
 
-  <!-- TOAST THÔNG BÁO -->
+  <!-- ===================== HỘP THOẠI XÁC NHẬN / NHẬP LIỆU ===================== -->
+  <div id="dialog-modal" class="modal-backdrop dialog-layer hidden" role="alertdialog" aria-modal="true" aria-labelledby="dialog-title">
+    <div class="modal-card modal-sm">
+      <div id="dialog-icon" class="dialog-icon"><svg class="ic"><use id="dialog-icon-use" href="#i-alert"/></svg></div>
+      <h2 id="dialog-title" class="dialog-title"></h2>
+      <p id="dialog-message" class="dialog-message"></p>
+      <form id="dialog-form" autocomplete="off">
+        <input type="password" id="dialog-input" class="hidden" />
+        <div class="modal-footer dialog-footer">
+          <button type="button" id="dialog-cancel-btn" class="btn btn-ghost">Hủy</button>
+          <button type="submit" id="dialog-ok-btn" class="btn btn-primary">Đồng ý</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
   <script defer src="./js/crypto.js"></script>

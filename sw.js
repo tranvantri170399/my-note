@@ -1,4 +1,4 @@
-const CACHE_NAME = 'my-note-vault-v1';
+const CACHE_NAME = 'my-note-vault-v2';
 const APP_SHELL = [
   './',
   './index.html',

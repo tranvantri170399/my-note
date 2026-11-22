@@ -145,6 +145,27 @@
     confirmDeleteBtn: $('confirm-delete-btn'),
 
     toastContainer: $('toast-container'),
+
+    upcomingCount: $('upcoming-count'),
+    navSearchBtn: $('nav-search-btn'),
+    navUpcomingBtn: $('nav-upcoming-btn'),
+    navUpcomingBadge: $('nav-upcoming-badge'),
+    navAddBtn: $('nav-add-btn'),
+    navSettingsBtn: $('nav-settings-btn'),
+    navLockBtn: $('nav-lock-btn'),
+    pwStrength: $('pw-strength'),
+    pwStrengthFill: $('pw-strength-fill'),
+    pwStrengthLabel: $('pw-strength-label'),
+
+    dialogModal: $('dialog-modal'),
+    dialogIcon: $('dialog-icon'),
+    dialogIconUse: $('dialog-icon-use'),
+    dialogTitle: $('dialog-title'),
+    dialogMessage: $('dialog-message'),
+    dialogForm: $('dialog-form'),
+    dialogInput: $('dialog-input'),
+    dialogCancelBtn: $('dialog-cancel-btn'),
+    dialogOkBtn: $('dialog-ok-btn'),
   };
 
   /* ------------------------- TIỆN ÍCH CHUNG ------------------------- */
@@ -182,14 +203,177 @@
     return '';
   }
 
+  /* ------------------------- ICON & GIAO DIỆN ------------------------- */
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+
+  function icon(name, extraClass = '') {
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('class', `ic ${extraClass}`.trim());
+    svg.setAttribute('aria-hidden', 'true');
+    const use = document.createElementNS(SVG_NS, 'use');
+    use.setAttribute('href', `#i-${name}`);
+    svg.appendChild(use);
+    return svg;
+  }
+
+  function iconButton(name, label, className, onClick) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = className;
+    btn.title = label;
+    btn.setAttribute('aria-label', label);
+    btn.appendChild(icon(name));
+    if (onClick) btn.addEventListener('click', onClick);
+    return btn;
+  }
+
+  const AVATAR_COLORS = [
+    ['#f43f5e', '#e11d48'],
+    ['#f97316', '#ea580c'],
+    ['#eab308', '#ca8a04'],
+    ['#22c55e', '#16a34a'],
+    ['#14b8a6', '#0d9488'],
+    ['#06b6d4', '#0891b2'],
+    ['#3b82f6', '#2563eb'],
+    ['#6366f1', '#4f46e5'],
+    ['#a855f7', '#9333ea'],
+    ['#ec4899', '#db2777'],
+  ];
+
+  function createAvatar(title) {
+    const clean = String(title || '?').trim();
+    const firstChar = Array.from(clean)[0] || '?';
+    let hash = 0;
+    for (const ch of normalizeSearchText(clean)) {
+      hash = (hash * 31 + ch.codePointAt(0)) >>> 0;
+    }
+    const [c1, c2] = AVATAR_COLORS[hash % AVATAR_COLORS.length];
+    const el = document.createElement('div');
+    el.className = 'avatar';
+    el.style.background = `linear-gradient(135deg, ${c1}, ${c2})`;
+    el.textContent = firstChar;
+    el.setAttribute('aria-hidden', 'true');
+    return el;
+  }
+
+  function getHostname(rawUrl) {
+    const href = toSafeHref(rawUrl);
+    if (!href) return '';
+    try {
+      return new URL(href).hostname.replace(/^www\./, '');
+    } catch {
+      return '';
+    }
+  }
+
+  function evaluatePasswordStrength(pw) {
+    if (!pw) return { score: 0, label: '', color: '' };
+    let score = 0;
+    if (pw.length >= 8) score += 1;
+    if (pw.length >= 12) score += 1;
+    if (pw.length >= 16) score += 1;
+    const variety =
+      Number(/[a-z]/.test(pw)) +
+      Number(/[A-Z]/.test(pw)) +
+      Number(/[0-9]/.test(pw)) +
+      Number(/[^A-Za-z0-9]/.test(pw));
+    if (variety >= 3) score += 1;
+    if (variety === 4) score += 1;
+    if (/^(.)\1+$/.test(pw) || /^(123|abc|qwe|password|matkhau)/i.test(pw)) score = Math.min(score, 1);
+
+    if (score <= 1) return { score: 1, label: 'Rất yếu', color: 'var(--danger)' };
+    if (score === 2) return { score: 2, label: 'Yếu', color: '#f97316' };
+    if (score === 3) return { score: 3, label: 'Trung bình', color: 'var(--warn)' };
+    if (score === 4) return { score: 4, label: 'Mạnh', color: '#22c55e' };
+    return { score: 5, label: 'Rất mạnh', color: 'var(--ok)' };
+  }
+
+  function updatePasswordStrength() {
+    const pw = els.itemPassword.value;
+    const result = evaluatePasswordStrength(pw);
+    if (!result.score) {
+      els.pwStrength.classList.add('hidden');
+      return;
+    }
+    els.pwStrength.classList.remove('hidden');
+    els.pwStrengthFill.style.width = `${result.score * 20}%`;
+    els.pwStrengthFill.style.background = result.color;
+    els.pwStrengthLabel.textContent = result.label;
+    els.pwStrengthLabel.style.color = result.color;
+  }
+
+  /* ------------------------- HỘP THOẠI TÙY CHỈNH ------------------------- */
+
+  let dialogResolver = null;
+
+  function closeDialog(result) {
+    if (!dialogResolver) return;
+    const resolve = dialogResolver;
+    dialogResolver = null;
+    els.dialogModal.classList.add('hidden');
+    els.dialogInput.value = '';
+    resolve(result);
+  }
+
+  /**
+   * Thay thế window.confirm / window.prompt bằng hộp thoại đồng bộ giao diện.
+   * Trả về true/false (confirm) hoặc chuỗi/null (khi có input).
+   */
+  function uiDialog({
+    title,
+    message = '',
+    tone = 'primary',
+    iconName = 'alert',
+    okText = 'Đồng ý',
+    cancelText = 'Hủy',
+    input = null,
+  }) {
+    if (dialogResolver) closeDialog(input ? null : false);
+
+    els.dialogTitle.textContent = title;
+    els.dialogMessage.textContent = message;
+    els.dialogIcon.className = `dialog-icon${tone === 'primary' ? '' : ` ${tone}`}`;
+    els.dialogIconUse.setAttribute('href', `#i-${iconName}`);
+    els.dialogOkBtn.textContent = okText;
+    els.dialogOkBtn.className = `btn ${tone === 'danger' ? 'btn-danger' : 'btn-primary'}`;
+    els.dialogCancelBtn.textContent = cancelText;
+
+    if (input) {
+      els.dialogInput.type = input.type || 'text';
+      els.dialogInput.placeholder = input.placeholder || '';
+      els.dialogInput.value = '';
+      els.dialogInput.classList.remove('hidden');
+    } else {
+      els.dialogInput.classList.add('hidden');
+    }
+
+    els.dialogModal.classList.remove('hidden');
+    setTimeout(() => (input ? els.dialogInput : els.dialogOkBtn).focus(), 40);
+
+    return new Promise((resolve) => {
+      dialogResolver = (result) => {
+        if (input) {
+          resolve(result === true ? els.dialogInput.value : null);
+        } else {
+          resolve(result === true);
+        }
+      };
+    });
+  }
+
   function showToast(message, isError = false) {
     const toast = document.createElement('div');
     toast.className = `toast${isError ? ' error' : ''}`;
-    toast.textContent = message;
+    toast.appendChild(icon(isError ? 'alert' : 'check'));
+    const text = document.createElement('span');
+    text.textContent = message;
+    toast.appendChild(text);
     els.toastContainer.appendChild(toast);
     setTimeout(() => {
-      toast.remove();
-    }, 3200);
+      toast.classList.add('leaving');
+      setTimeout(() => toast.remove(), 260);
+    }, 3000);
   }
 
   function setAuthError(message) {
@@ -214,10 +398,15 @@
     els.syncStatus.textContent = text;
   }
 
+  function setVisibilityIcon(button, visible) {
+    button.replaceChildren(icon(visible ? 'eye-off' : 'eye'));
+    button.setAttribute('aria-label', visible ? 'Ẩn' : 'Hiện');
+  }
+
   function toggleInputVisibility(input, button) {
-    const isPassword = input.type === 'password';
-    input.type = isPassword ? 'text' : 'password';
-    button.textContent = isPassword ? 'Ẩn' : 'Hiện';
+    const willShow = input.type === 'password';
+    input.type = willShow ? 'text' : 'password';
+    setVisibilityIcon(button, willShow);
   }
 
   async function copyText(value, triggerBtn) {
@@ -227,7 +416,15 @@
     }
     try {
       await navigator.clipboard.writeText(value);
-      if (triggerBtn) {
+      if (triggerBtn && triggerBtn.classList.contains('cred-btn')) {
+        triggerBtn.replaceChildren(icon('check'));
+        triggerBtn.classList.add('copied');
+        setTimeout(() => {
+          triggerBtn.replaceChildren(icon('copy'));
+          triggerBtn.classList.remove('copied');
+        }, 1400);
+        showToast('Đã copy vào clipboard.');
+      } else if (triggerBtn) {
         const original = triggerBtn.textContent;
         triggerBtn.textContent = 'Đã copy';
         triggerBtn.disabled = true;
@@ -431,11 +628,11 @@
     els.gistLink.href = state.htmlUrl || `https://gist.github.com/${state.gistId}`;
     els.displayGistId.value = state.gistId;
 
-    const visText = state.isPublic ? '⚠ Public Gist' : '🔒 Private';
+    const visText = state.isPublic ? 'Public' : 'Private';
     els.gistVisibilityBadge.textContent = visText;
     els.gistVisibilityBadge.classList.toggle('is-public', state.isPublic);
 
-    els.displayGistVisibility.textContent = state.isPublic ? '⚠ Public' : '🔒 Private';
+    els.displayGistVisibility.textContent = state.isPublic ? 'Public' : 'Private';
     els.displayGistVisibility.classList.toggle('is-public', state.isPublic);
   }
 
@@ -576,11 +773,17 @@
     if (state.remoteUpdatedAt) {
       const latestRemoteUpdatedAt = await getGistUpdatedAt(state.token, state.gistId);
       if (latestRemoteUpdatedAt && latestRemoteUpdatedAt !== state.remoteUpdatedAt) {
-        const forceOverwrite = window.confirm(
-          'Dữ liệu trên GitHub Gist vừa được cập nhật từ thiết bị hoặc tab khác.\n\n' +
-            '• Bấm OK để GHI ĐÈ bằng dữ liệu hiện tại.\n' +
-            '• Bấm Hủy rồi bấm nút "Đồng bộ" để tải bản mới nhất trước.'
-        );
+        const forceOverwrite = await uiDialog({
+          title: 'Dữ liệu trên Gist vừa thay đổi',
+          message:
+            'Kho vừa được cập nhật từ thiết bị hoặc tab khác.\n' +
+            'Ghi đè sẽ thay thế bằng dữ liệu hiện tại trên máy này. ' +
+            'Hoặc chọn "Để sau" rồi bấm Đồng bộ để tải bản mới nhất trước.',
+          tone: 'warn',
+          iconName: 'refresh',
+          okText: 'Ghi đè',
+          cancelText: 'Để sau',
+        });
         if (!forceOverwrite) {
           setSyncIndicator('error', 'Cần đồng bộ');
           return false;
@@ -622,6 +825,7 @@
     closeItemModal();
     closeSettingsModal();
     closeDeleteModal();
+    closeDialog(false);
 
     els.vaultView.classList.add('hidden');
     els.authView.classList.remove('hidden');
@@ -657,10 +861,14 @@
       }
     }
 
-    els.filterUpcomingBtn.textContent =
-      activeCount > 0 ? `⏰ Có lịch hẹn (${activeCount})` : '⏰ Có lịch hẹn';
+    els.upcomingCount.textContent = String(activeCount);
+    els.upcomingCount.classList.toggle('hidden', activeCount === 0);
 
     const urgentCount = overdueCount + soonCount;
+    els.navUpcomingBadge.textContent = String(urgentCount);
+    els.navUpcomingBadge.classList.toggle('hidden', urgentCount === 0);
+    els.navUpcomingBtn.classList.toggle('active', state.filter === 'upcoming');
+
     if (urgentCount === 0 || state.filter === 'upcoming') {
       els.dueBanner.classList.add('hidden');
       els.dueBanner.classList.remove('has-overdue');
@@ -669,8 +877,8 @@
 
     const parts = [];
     if (overdueCount > 0) parts.push(`${overdueCount} mục quá hạn`);
-    if (soonCount > 0) parts.push(`${soonCount} mục sắp đến hạn (trong 7 ngày tới)`);
-    els.dueBannerText.textContent = `⏰ Nhắc nhở: Có ${parts.join(' và ')}.`;
+    if (soonCount > 0) parts.push(`${soonCount} mục sắp đến hạn`);
+    els.dueBannerText.textContent = `Có ${parts.join(' và ')}.`;
     els.dueBanner.classList.toggle('has-overdue', overdueCount > 0);
     els.dueBanner.classList.remove('hidden');
   }
@@ -708,7 +916,7 @@
       });
   }
 
-  function createCredRow(labelText, displayText, copyValue, extraButtons = []) {
+  function createCredRow(labelText, displayText, copyValue, { masked = false, extraButtons = [] } = {}) {
     const row = document.createElement('div');
     row.className = 'cred-row';
 
@@ -720,8 +928,9 @@
     label.textContent = labelText;
 
     const val = document.createElement('span');
-    val.className = 'cred-value';
+    val.className = `cred-value${masked ? ' masked' : ''}`;
     val.textContent = displayText;
+    val.title = masked ? '' : displayText;
 
     main.appendChild(label);
     main.appendChild(val);
@@ -733,10 +942,7 @@
       btns.appendChild(btn);
     }
 
-    const copyBtn = document.createElement('button');
-    copyBtn.type = 'button';
-    copyBtn.className = 'copy-pill';
-    copyBtn.textContent = 'Copy';
+    const copyBtn = iconButton('copy', `Copy ${labelText.toLowerCase()}`, 'cred-btn');
     copyBtn.addEventListener('click', () => copyText(copyValue, copyBtn));
     btns.appendChild(copyBtn);
 
@@ -752,46 +958,54 @@
     const box = document.createElement('div');
     box.className = `card-reminder state-${status.state}`;
 
-    const top = document.createElement('div');
-    top.className = 'card-reminder-top';
+    const info = document.createElement('div');
+    info.className = 'card-reminder-info';
 
     const badge = document.createElement('span');
     badge.className = 'card-reminder-badge';
+    const badgeIcon =
+      status.state === 'overdue' ? 'alert' : status.state === 'done' ? 'check' : 'clock';
     const prefix =
-      status.state === 'overdue'
-        ? '⚠ Quá hạn'
-        : status.state === 'done'
-          ? '✓ Đã xong'
-          : `⏰ ${status.label}`;
-    badge.textContent = `${prefix}: ${formatReminderDate(item.remindAt)}`;
-    top.appendChild(badge);
-    box.appendChild(top);
+      status.state === 'overdue' ? 'Quá hạn' : status.state === 'done' ? 'Đã xong' : status.label;
+    badge.appendChild(icon(badgeIcon, 'ic-sm'));
+    const badgeText = document.createElement('span');
+    badgeText.textContent = `${prefix} · ${formatReminderDate(item.remindAt)}`;
+    badge.appendChild(badgeText);
+    info.appendChild(badge);
 
     if (item.remindNote) {
-      const note = document.createElement('div');
+      const note = document.createElement('span');
       note.className = 'card-reminder-note';
       note.textContent = item.remindNote;
-      box.appendChild(note);
+      info.appendChild(note);
     }
+    box.appendChild(info);
 
     const actions = document.createElement('div');
     actions.className = 'card-reminder-actions';
 
     const gcalUrl = buildGoogleCalendarUrl(item);
-    if (gcalUrl) {
+    if (gcalUrl && !item.remindDone) {
       const gcalLink = document.createElement('a');
-      gcalLink.className = 'gcal-link';
+      gcalLink.className = 'reminder-btn';
       gcalLink.href = gcalUrl;
       gcalLink.target = '_blank';
       gcalLink.rel = 'noopener noreferrer';
-      gcalLink.textContent = '📅 Google Calendar';
+      gcalLink.title = 'Thêm vào Google Calendar';
+      gcalLink.appendChild(icon('calendar'));
+      const gcalText = document.createElement('span');
+      gcalText.textContent = 'Calendar';
+      gcalLink.appendChild(gcalText);
       actions.appendChild(gcalLink);
     }
 
     const doneBtn = document.createElement('button');
     doneBtn.type = 'button';
-    doneBtn.className = 'copy-pill';
-    doneBtn.textContent = item.remindDone ? '↺ Nhắc lại' : '✓ Đã xong';
+    doneBtn.className = 'reminder-btn';
+    doneBtn.appendChild(icon(item.remindDone ? 'rotate' : 'check'));
+    const doneText = document.createElement('span');
+    doneText.textContent = item.remindDone ? 'Nhắc lại' : 'Xong';
+    doneBtn.appendChild(doneText);
     doneBtn.addEventListener('click', () => toggleReminderDone(item.id));
     actions.appendChild(doneBtn);
 
@@ -805,8 +1019,8 @@
     const total = state.items.length;
     els.itemsCount.textContent =
       filtered.length === total
-        ? `${total} mục`
-        : `Hiển thị ${filtered.length} / ${total} mục`;
+        ? `${total} tài khoản`
+        : `Hiển thị ${filtered.length} / ${total} tài khoản`;
 
     els.itemsList.textContent = '';
 
@@ -814,7 +1028,7 @@
       els.emptyState.classList.remove('hidden');
       els.emptyStateText.textContent =
         total === 0
-          ? 'Kho dữ liệu đang trống. Hãy thêm mail hoặc tài khoản đầu tiên.'
+          ? 'Kho đang trống. Thêm mail hoặc tài khoản đầu tiên của bạn.'
           : 'Không tìm thấy mục nào khớp với bộ lọc hiện tại.';
       els.emptyAddBtn.classList.toggle('hidden', total > 0);
       return;
@@ -827,53 +1041,51 @@
       const card = document.createElement('article');
       card.className = 'item-card';
 
-      // Header
+      // Header: Avatar + Tên + Phân loại/Website + Hành động
       const top = document.createElement('div');
       top.className = 'card-top';
+
+      top.appendChild(createAvatar(item.title));
 
       const titleWrap = document.createElement('div');
       titleWrap.className = 'card-title-wrap';
 
       const titleRow = document.createElement('div');
       titleRow.className = 'card-title';
+      titleRow.textContent = item.title;
+      titleRow.title = item.title;
 
-      const pinBtn = document.createElement('button');
-      pinBtn.type = 'button';
-      pinBtn.className = `pin-btn${item.pinned ? ' pinned' : ''}`;
-      pinBtn.title = item.pinned ? 'Bỏ ghim' : 'Ghim lên đầu';
-      pinBtn.textContent = item.pinned ? '★' : '☆';
-      pinBtn.addEventListener('click', () => togglePinItem(item.id));
-
-      const titleSpan = document.createElement('span');
-      titleSpan.textContent = item.title;
-
-      titleRow.appendChild(pinBtn);
-      titleRow.appendChild(titleSpan);
-
+      const sub = document.createElement('div');
+      sub.className = 'card-sub';
       const catTag = document.createElement('span');
       catTag.className = 'cat-tag';
       catTag.textContent = CATEGORY_LABELS[item.category] || 'Khác';
+      sub.appendChild(catTag);
+      const host = getHostname(item.url);
+      if (host) {
+        const hostEl = document.createElement('span');
+        hostEl.className = 'card-host';
+        hostEl.textContent = host;
+        sub.appendChild(hostEl);
+      }
 
       titleWrap.appendChild(titleRow);
-      titleWrap.appendChild(catTag);
+      titleWrap.appendChild(sub);
 
       const actions = document.createElement('div');
       actions.className = 'card-actions';
-
-      const editBtn = document.createElement('button');
-      editBtn.type = 'button';
-      editBtn.className = 'mini-btn';
-      editBtn.textContent = 'Sửa';
-      editBtn.addEventListener('click', () => openItemModal(item));
-
-      const delBtn = document.createElement('button');
-      delBtn.type = 'button';
-      delBtn.className = 'mini-btn danger';
-      delBtn.textContent = 'Xóa';
-      delBtn.addEventListener('click', () => openDeleteModal(item));
-
-      actions.appendChild(editBtn);
-      actions.appendChild(delBtn);
+      actions.appendChild(
+        iconButton(
+          'star',
+          item.pinned ? 'Bỏ ghim' : 'Ghim lên đầu',
+          `mini-btn${item.pinned ? ' pinned' : ''}`,
+          () => togglePinItem(item.id)
+        )
+      );
+      actions.appendChild(iconButton('edit', 'Sửa', 'mini-btn', () => openItemModal(item)));
+      actions.appendChild(
+        iconButton('trash', 'Xóa', 'mini-btn danger', () => openDeleteModal(item))
+      );
 
       top.appendChild(titleWrap);
       top.appendChild(actions);
@@ -881,40 +1093,37 @@
 
       // Email / Username
       if (item.username) {
-        card.appendChild(
-          createCredRow('Email / Đăng nhập', item.username, item.username)
-        );
+        card.appendChild(createCredRow('Email / Đăng nhập', item.username, item.username));
       }
 
       // Password
       if (item.password) {
         const isRevealed = state.revealedIds.has(item.id);
-        const masked = '•'.repeat(Math.min(Math.max(item.password.length, 8), 16));
+        const masked = '•'.repeat(Math.min(Math.max(item.password.length, 8), 14));
 
-        const revealBtn = document.createElement('button');
-        revealBtn.type = 'button';
-        revealBtn.className = 'copy-pill';
-        revealBtn.textContent = isRevealed ? 'Ẩn' : 'Hiện';
-        revealBtn.addEventListener('click', () => {
-          if (state.revealedIds.has(item.id)) {
-            state.revealedIds.delete(item.id);
-          } else {
-            state.revealedIds.add(item.id);
+        const revealBtn = iconButton(
+          isRevealed ? 'eye-off' : 'eye',
+          isRevealed ? 'Ẩn mật khẩu' : 'Hiện mật khẩu',
+          'cred-btn',
+          () => {
+            if (state.revealedIds.has(item.id)) {
+              state.revealedIds.delete(item.id);
+            } else {
+              state.revealedIds.add(item.id);
+            }
+            renderItems();
           }
-          renderItems();
-        });
+        );
 
         card.appendChild(
-          createCredRow(
-            'Mật khẩu',
-            isRevealed ? item.password : masked,
-            item.password,
-            [revealBtn]
-          )
+          createCredRow('Mật khẩu', isRevealed ? item.password : masked, item.password, {
+            masked: !isRevealed,
+            extraButtons: [revealBtn],
+          })
         );
       }
 
-      // Safe Website Link
+      // Website
       if (item.url) {
         const safeHref = toSafeHref(item.url);
         if (safeHref) {
@@ -923,7 +1132,10 @@
           link.href = safeHref;
           link.target = '_blank';
           link.rel = 'noopener noreferrer';
-          link.textContent = `↗ ${item.url}`;
+          link.appendChild(icon('link', 'ic-sm'));
+          const linkText = document.createElement('span');
+          linkText.textContent = item.url;
+          link.appendChild(linkText);
           card.appendChild(link);
         } else {
           const urlText = document.createElement('div');
@@ -933,7 +1145,7 @@
         }
       }
 
-      // Notes
+      // Ghi chú
       if (item.notes) {
         const notes = document.createElement('div');
         notes.className = 'card-notes';
@@ -941,7 +1153,7 @@
         card.appendChild(notes);
       }
 
-      // Reminder & Google Calendar
+      // Lịch hẹn & Google Calendar
       const reminderBlock = createReminderBlock(item);
       if (reminderBlock) {
         card.appendChild(reminderBlock);
@@ -964,7 +1176,7 @@
   function openItemModal(item = null) {
     els.itemForm.reset();
     els.itemPassword.type = 'password';
-    els.toggleItemPwBtn.textContent = 'Hiện';
+    setVisibilityIcon(els.toggleItemPwBtn, false);
 
     if (item) {
       els.itemModalTitle.textContent = 'Chỉnh sửa tài khoản';
@@ -988,6 +1200,7 @@
     }
 
     syncModalReminderControls();
+    updatePasswordStrength();
     els.itemModal.classList.remove('hidden');
     setTimeout(() => els.itemTitle.focus(), 30);
   }
@@ -1156,11 +1369,16 @@
     }
   }
 
-  function handleExportPlain() {
-    const confirmed = window.confirm(
-      'CẢNH BÁO: File JSON này chứa mật khẩu KHÔNG MÃ HÓA (dạng chữ thường).\n' +
-        'Chỉ xuất khi bạn muốn xem trực tiếp hoặc chuyển dữ liệu. Tiếp tục?'
-    );
+  async function handleExportPlain() {
+    const confirmed = await uiDialog({
+      title: 'Xuất file không mã hóa?',
+      message:
+        'File JSON này chứa toàn bộ mật khẩu dạng chữ thường. ' +
+        'Chỉ xuất khi cần xem trực tiếp hoặc chuyển dữ liệu, và xóa file ngay sau khi dùng.',
+      tone: 'danger',
+      iconName: 'alert',
+      okText: 'Vẫn xuất',
+    });
     if (!confirmed) return;
 
     const dateStr = new Date().toISOString().slice(0, 10);
@@ -1188,9 +1406,13 @@
           importedRaw = await decryptVaultData(parsed, state.masterPassword);
         } catch (err) {
           if (err.code === 'WRONG_PASSWORD') {
-            const altPassword = window.prompt(
-              'File sao lưu này được mã hóa bằng Master Password khác.\nNhập Master Password của file để giải mã:'
-            );
+            const altPassword = await uiDialog({
+              title: 'Nhập Master Password của file',
+              message: 'File sao lưu này được mã hóa bằng một Master Password khác.',
+              iconName: 'key',
+              okText: 'Giải mã',
+              input: { type: 'password', placeholder: 'Master Password của file sao lưu' },
+            });
             if (!altPassword) return;
             importedRaw = await decryptVaultData(parsed, altPassword);
           } else {
@@ -1207,10 +1429,13 @@
 
       let nextItems = importedItems;
       if (state.items.length > 0) {
-        const mergeConfirm = window.confirm(
-          `Tìm thấy ${importedItems.length} tài khoản trong file.\n` +
-            'Bấm OK để GỘP thêm vào danh sách hiện tại (bỏ qua mục trùng ID) và lưu lên Gist.'
-        );
+        const mergeConfirm = await uiDialog({
+          title: `Tìm thấy ${importedItems.length} tài khoản`,
+          message:
+            'Các mục trong file sẽ được gộp thêm vào danh sách hiện tại (bỏ qua mục trùng ID) và lưu lên Gist.',
+          iconName: 'upload',
+          okText: 'Gộp & Lưu',
+        });
         if (!mergeConfirm) return;
 
         const existingIds = new Set(state.items.map((x) => x.id));
@@ -1342,7 +1567,35 @@
     els.genPwBtn.addEventListener('click', () => {
       els.itemPassword.value = generateStrongPassword(18);
       els.itemPassword.type = 'text';
-      els.toggleItemPwBtn.textContent = 'Ẩn';
+      setVisibilityIcon(els.toggleItemPwBtn, true);
+      updatePasswordStrength();
+    });
+    els.itemPassword.addEventListener('input', updatePasswordStrength);
+
+    // Thanh điều hướng dưới đáy (mobile)
+    els.navSearchBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      els.searchInput.focus();
+    });
+    els.navUpcomingBtn.addEventListener('click', () => {
+      setActiveFilter(state.filter === 'upcoming' ? 'all' : 'upcoming');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    els.navAddBtn.addEventListener('click', () => openItemModal(null));
+    els.navSettingsBtn.addEventListener('click', openSettingsModal);
+    els.navLockBtn.addEventListener('click', () => {
+      lockVault();
+      showToast('Đã khóa kho dữ liệu.');
+    });
+
+    // Hộp thoại xác nhận / nhập liệu
+    els.dialogForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      closeDialog(true);
+    });
+    els.dialogCancelBtn.addEventListener('click', () => closeDialog(false));
+    els.dialogModal.addEventListener('click', (e) => {
+      if (e.target === els.dialogModal) closeDialog(false);
     });
 
     els.backupMenuBtn.addEventListener('click', openSettingsModal);
@@ -1390,7 +1643,9 @@
     // Phím tắt Esc và /
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        if (!els.deleteModal.classList.contains('hidden')) {
+        if (!els.dialogModal.classList.contains('hidden')) {
+          closeDialog(false);
+        } else if (!els.deleteModal.classList.contains('hidden')) {
           closeDeleteModal();
         } else if (!els.itemModal.classList.contains('hidden')) {
           closeItemModal();
