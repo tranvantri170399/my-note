@@ -28,6 +28,7 @@
     GIST_ID: 'my_note_gist_id',
     THEME: 'my_note_theme',
     AUTO_LOCK_MIN: 'my_note_autolock_minutes',
+    VIEW_MODE: 'my_note_view_mode',
   };
 
   const VALID_AUTOLOCK_MINUTES = new Set([0, 1, 5, 10, 30]);
@@ -53,6 +54,8 @@
     items: [],
     filter: 'all',
     search: '',
+    viewMode: 'compact',
+    expandedIds: new Set(),
     revealedIds: new Set(),
     pendingDeleteId: null,
     busy: false,
@@ -97,6 +100,8 @@
     dueBannerText: $('due-banner-text'),
     dueBannerBtn: $('due-banner-btn'),
     itemsCount: $('items-count'),
+    viewCompactBtn: $('view-compact-btn'),
+    viewCardsBtn: $('view-cards-btn'),
     itemsList: $('items-list'),
     emptyState: $('empty-state'),
     emptyStateText: $('empty-state-text'),
@@ -222,6 +227,7 @@
     btn.type = 'button';
     btn.className = className;
     btn.title = label;
+    btn.dataset.icon = name;
     btn.setAttribute('aria-label', label);
     btn.appendChild(icon(name));
     if (onClick) btn.addEventListener('click', onClick);
@@ -409,7 +415,7 @@
     setVisibilityIcon(button, willShow);
   }
 
-  async function copyText(value, triggerBtn) {
+  async function copyText(value, triggerBtn, toastMessage = 'Đã copy vào clipboard.') {
     if (!value) {
       showToast('Trường này đang trống.', true);
       return;
@@ -417,13 +423,14 @@
     try {
       await navigator.clipboard.writeText(value);
       if (triggerBtn && triggerBtn.classList.contains('cred-btn')) {
+        const restoreIcon = triggerBtn.dataset.icon || 'copy';
         triggerBtn.replaceChildren(icon('check'));
         triggerBtn.classList.add('copied');
         setTimeout(() => {
-          triggerBtn.replaceChildren(icon('copy'));
+          triggerBtn.replaceChildren(icon(restoreIcon));
           triggerBtn.classList.remove('copied');
         }, 1400);
-        showToast('Đã copy vào clipboard.');
+        showToast(toastMessage);
       } else if (triggerBtn) {
         const original = triggerBtn.textContent;
         triggerBtn.textContent = 'Đã copy';
@@ -433,7 +440,7 @@
           triggerBtn.disabled = false;
         }, 1400);
       } else {
-        showToast('Đã copy vào clipboard.');
+        showToast(toastMessage);
       }
     } catch {
       showToast('Trình duyệt không cho phép copy tự động.', true);
@@ -709,6 +716,7 @@
       state.remoteUpdatedAt = vaultInfo.updatedAt;
       state.lastEnvelope = vaultInfo.envelope;
       state.items = items;
+      state.expandedIds.clear();
       state.revealedIds.clear();
 
       saveCredentialsIfRequested(token, vaultInfo.gistId);
@@ -751,6 +759,7 @@
       state.isPublic = Boolean(vaultInfo.isPublic);
       state.remoteUpdatedAt = vaultInfo.updatedAt;
       state.lastEnvelope = vaultInfo.envelope;
+      state.expandedIds.clear();
       state.revealedIds.clear();
 
       updateGistHeaderInfo();
@@ -816,6 +825,7 @@
     state.remoteUpdatedAt = null;
     state.lastEnvelope = null;
     state.items = [];
+    state.expandedIds.clear();
     state.revealedIds.clear();
     state.pendingDeleteId = null;
 
@@ -1013,6 +1023,292 @@
     return box;
   }
 
+  function loadViewMode() {
+    const saved = localStorage.getItem(STORAGE_KEYS.VIEW_MODE);
+    return saved === 'cards' ? 'cards' : 'compact';
+  }
+
+  function setViewMode(mode) {
+    const next = mode === 'cards' ? 'cards' : 'compact';
+    state.viewMode = next;
+    localStorage.setItem(STORAGE_KEYS.VIEW_MODE, next);
+    els.viewCompactBtn.classList.toggle('active', next === 'compact');
+    els.viewCardsBtn.classList.toggle('active', next === 'cards');
+    renderItems();
+  }
+
+  function toggleExpandItem(itemId) {
+    if (state.expandedIds.has(itemId)) {
+      state.expandedIds.delete(itemId);
+      state.revealedIds.delete(itemId);
+    } else {
+      state.expandedIds.add(itemId);
+    }
+    renderItems();
+  }
+
+  function appendItemDetails(container, item) {
+    // Email / Username
+    if (item.username) {
+      container.appendChild(createCredRow('Email / Đăng nhập', item.username, item.username));
+    }
+
+    // Password
+    if (item.password) {
+      const isRevealed = state.revealedIds.has(item.id);
+      const masked = '•'.repeat(Math.min(Math.max(item.password.length, 8), 14));
+
+      const revealBtn = iconButton(
+        isRevealed ? 'eye-off' : 'eye',
+        isRevealed ? 'Ẩn mật khẩu' : 'Hiện mật khẩu',
+        'cred-btn',
+        () => {
+          if (state.revealedIds.has(item.id)) {
+            state.revealedIds.delete(item.id);
+          } else {
+            state.revealedIds.add(item.id);
+          }
+          renderItems();
+        }
+      );
+
+      container.appendChild(
+        createCredRow('Mật khẩu', isRevealed ? item.password : masked, item.password, {
+          masked: !isRevealed,
+          extraButtons: [revealBtn],
+        })
+      );
+    }
+
+    // Website
+    if (item.url) {
+      const safeHref = toSafeHref(item.url);
+      if (safeHref) {
+        const link = document.createElement('a');
+        link.className = 'card-url';
+        link.href = safeHref;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.appendChild(icon('link', 'ic-sm'));
+        const linkText = document.createElement('span');
+        linkText.textContent = item.url;
+        link.appendChild(linkText);
+        container.appendChild(link);
+      } else {
+        const urlText = document.createElement('div');
+        urlText.className = 'card-url';
+        urlText.textContent = item.url;
+        container.appendChild(urlText);
+      }
+    }
+
+    // Ghi chú
+    if (item.notes) {
+      const notes = document.createElement('div');
+      notes.className = 'card-notes';
+      notes.textContent = item.notes;
+      container.appendChild(notes);
+    }
+
+    // Lịch hẹn & Google Calendar
+    const reminderBlock = createReminderBlock(item);
+    if (reminderBlock) {
+      container.appendChild(reminderBlock);
+    }
+  }
+
+  function createCompactActionBtn(iconName, text, extraClass, onClick) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `compact-action-btn${extraClass ? ` ${extraClass}` : ''}`;
+    btn.appendChild(icon(iconName));
+    const span = document.createElement('span');
+    span.textContent = text;
+    btn.appendChild(span);
+    btn.addEventListener('click', onClick);
+    return btn;
+  }
+
+  function createCompactCard(item) {
+    const isExpanded = state.expandedIds.has(item.id);
+    const card = document.createElement('article');
+    card.className = `item-card is-compact${isExpanded ? ' is-expanded' : ''}`;
+
+    const row = document.createElement('div');
+    row.className = 'compact-row';
+    row.setAttribute('role', 'button');
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('aria-expanded', String(isExpanded));
+    row.addEventListener('click', () => toggleExpandItem(item.id));
+    row.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleExpandItem(item.id);
+      }
+    });
+
+    row.appendChild(createAvatar(item.title));
+
+    const main = document.createElement('div');
+    main.className = 'compact-main';
+
+    const titleLine = document.createElement('div');
+    titleLine.className = 'compact-title-line';
+
+    const titleEl = document.createElement('span');
+    titleEl.className = 'compact-title';
+    titleEl.textContent = item.title;
+    titleEl.title = item.title;
+    titleLine.appendChild(titleEl);
+
+    if (item.pinned) {
+      const pinSpan = document.createElement('span');
+      pinSpan.className = 'compact-pin';
+      pinSpan.title = 'Đã ghim';
+      pinSpan.appendChild(icon('star', 'ic-xs'));
+      titleLine.appendChild(pinSpan);
+    }
+
+    const remStatus = getReminderStatus(item);
+    if (remStatus.state === 'overdue' || remStatus.state === 'soon') {
+      const duePill = document.createElement('span');
+      duePill.className = `compact-due-pill${remStatus.state === 'overdue' ? ' overdue' : ''}`;
+      duePill.textContent = remStatus.state === 'overdue' ? 'Quá hạn' : remStatus.label;
+      titleLine.appendChild(duePill);
+    }
+
+    const sub = document.createElement('div');
+    sub.className = 'compact-sub';
+    const catTag = document.createElement('span');
+    catTag.className = 'cat-tag';
+    catTag.textContent = CATEGORY_LABELS[item.category] || 'Khác';
+    sub.appendChild(catTag);
+
+    const secondaryText = item.username || getHostname(item.url);
+    if (secondaryText) {
+      const subText = document.createElement('span');
+      subText.className = 'compact-sub-text';
+      subText.textContent = secondaryText;
+      sub.appendChild(subText);
+    }
+
+    main.appendChild(titleLine);
+    main.appendChild(sub);
+    row.appendChild(main);
+
+    const quick = document.createElement('div');
+    quick.className = 'compact-quick';
+
+    if (!isExpanded) {
+      if (item.username) {
+        const copyUserBtn = iconButton('user', 'Copy Email / Đăng nhập', 'cred-btn');
+        copyUserBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          copyText(item.username, copyUserBtn, 'Đã copy Email / Đăng nhập.');
+        });
+        quick.appendChild(copyUserBtn);
+      }
+      if (item.password) {
+        const copyPwBtn = iconButton('key', 'Copy Mật khẩu', 'cred-btn');
+        copyPwBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          copyText(item.password, copyPwBtn, 'Đã copy mật khẩu.');
+        });
+        quick.appendChild(copyPwBtn);
+      }
+    }
+
+    const chevron = document.createElement('span');
+    chevron.className = 'compact-chevron';
+    chevron.appendChild(icon('chevron', 'ic-sm'));
+    quick.appendChild(chevron);
+
+    row.appendChild(quick);
+    card.appendChild(row);
+
+    if (isExpanded) {
+      const details = document.createElement('div');
+      details.className = 'compact-details';
+      appendItemDetails(details, item);
+
+      const bar = document.createElement('div');
+      bar.className = 'compact-actions-bar';
+      bar.appendChild(
+        createCompactActionBtn(
+          'star',
+          item.pinned ? 'Bỏ ghim' : 'Ghim',
+          item.pinned ? 'pinned' : '',
+          () => togglePinItem(item.id)
+        )
+      );
+      bar.appendChild(createCompactActionBtn('edit', 'Sửa', '', () => openItemModal(item)));
+      bar.appendChild(
+        createCompactActionBtn('trash', 'Xóa', 'danger', () => openDeleteModal(item))
+      );
+      details.appendChild(bar);
+      card.appendChild(details);
+    }
+
+    return card;
+  }
+
+  function createFullCard(item) {
+    const card = document.createElement('article');
+    card.className = 'item-card';
+
+    const top = document.createElement('div');
+    top.className = 'card-top';
+
+    top.appendChild(createAvatar(item.title));
+
+    const titleWrap = document.createElement('div');
+    titleWrap.className = 'card-title-wrap';
+
+    const titleRow = document.createElement('div');
+    titleRow.className = 'card-title';
+    titleRow.textContent = item.title;
+    titleRow.title = item.title;
+
+    const sub = document.createElement('div');
+    sub.className = 'card-sub';
+    const catTag = document.createElement('span');
+    catTag.className = 'cat-tag';
+    catTag.textContent = CATEGORY_LABELS[item.category] || 'Khác';
+    sub.appendChild(catTag);
+    const host = getHostname(item.url);
+    if (host) {
+      const hostEl = document.createElement('span');
+      hostEl.className = 'card-host';
+      hostEl.textContent = host;
+      sub.appendChild(hostEl);
+    }
+
+    titleWrap.appendChild(titleRow);
+    titleWrap.appendChild(sub);
+
+    const actions = document.createElement('div');
+    actions.className = 'card-actions';
+    actions.appendChild(
+      iconButton(
+        'star',
+        item.pinned ? 'Bỏ ghim' : 'Ghim lên đầu',
+        `mini-btn${item.pinned ? ' pinned' : ''}`,
+        () => togglePinItem(item.id)
+      )
+    );
+    actions.appendChild(iconButton('edit', 'Sửa', 'mini-btn', () => openItemModal(item)));
+    actions.appendChild(
+      iconButton('trash', 'Xóa', 'mini-btn danger', () => openDeleteModal(item))
+    );
+
+    top.appendChild(titleWrap);
+    top.appendChild(actions);
+    card.appendChild(top);
+
+    appendItemDetails(card, item);
+    return card;
+  }
+
   function renderItems() {
     updateReminderSummary();
     const filtered = getFilteredItems();
@@ -1022,6 +1318,8 @@
         ? `${total} tài khoản`
         : `Hiển thị ${filtered.length} / ${total} tài khoản`;
 
+    const isCompact = state.viewMode === 'compact';
+    els.itemsList.className = isCompact ? 'items-list-compact' : 'items-grid';
     els.itemsList.textContent = '';
 
     if (filtered.length === 0) {
@@ -1038,128 +1336,7 @@
     const fragment = document.createDocumentFragment();
 
     for (const item of filtered) {
-      const card = document.createElement('article');
-      card.className = 'item-card';
-
-      // Header: Avatar + Tên + Phân loại/Website + Hành động
-      const top = document.createElement('div');
-      top.className = 'card-top';
-
-      top.appendChild(createAvatar(item.title));
-
-      const titleWrap = document.createElement('div');
-      titleWrap.className = 'card-title-wrap';
-
-      const titleRow = document.createElement('div');
-      titleRow.className = 'card-title';
-      titleRow.textContent = item.title;
-      titleRow.title = item.title;
-
-      const sub = document.createElement('div');
-      sub.className = 'card-sub';
-      const catTag = document.createElement('span');
-      catTag.className = 'cat-tag';
-      catTag.textContent = CATEGORY_LABELS[item.category] || 'Khác';
-      sub.appendChild(catTag);
-      const host = getHostname(item.url);
-      if (host) {
-        const hostEl = document.createElement('span');
-        hostEl.className = 'card-host';
-        hostEl.textContent = host;
-        sub.appendChild(hostEl);
-      }
-
-      titleWrap.appendChild(titleRow);
-      titleWrap.appendChild(sub);
-
-      const actions = document.createElement('div');
-      actions.className = 'card-actions';
-      actions.appendChild(
-        iconButton(
-          'star',
-          item.pinned ? 'Bỏ ghim' : 'Ghim lên đầu',
-          `mini-btn${item.pinned ? ' pinned' : ''}`,
-          () => togglePinItem(item.id)
-        )
-      );
-      actions.appendChild(iconButton('edit', 'Sửa', 'mini-btn', () => openItemModal(item)));
-      actions.appendChild(
-        iconButton('trash', 'Xóa', 'mini-btn danger', () => openDeleteModal(item))
-      );
-
-      top.appendChild(titleWrap);
-      top.appendChild(actions);
-      card.appendChild(top);
-
-      // Email / Username
-      if (item.username) {
-        card.appendChild(createCredRow('Email / Đăng nhập', item.username, item.username));
-      }
-
-      // Password
-      if (item.password) {
-        const isRevealed = state.revealedIds.has(item.id);
-        const masked = '•'.repeat(Math.min(Math.max(item.password.length, 8), 14));
-
-        const revealBtn = iconButton(
-          isRevealed ? 'eye-off' : 'eye',
-          isRevealed ? 'Ẩn mật khẩu' : 'Hiện mật khẩu',
-          'cred-btn',
-          () => {
-            if (state.revealedIds.has(item.id)) {
-              state.revealedIds.delete(item.id);
-            } else {
-              state.revealedIds.add(item.id);
-            }
-            renderItems();
-          }
-        );
-
-        card.appendChild(
-          createCredRow('Mật khẩu', isRevealed ? item.password : masked, item.password, {
-            masked: !isRevealed,
-            extraButtons: [revealBtn],
-          })
-        );
-      }
-
-      // Website
-      if (item.url) {
-        const safeHref = toSafeHref(item.url);
-        if (safeHref) {
-          const link = document.createElement('a');
-          link.className = 'card-url';
-          link.href = safeHref;
-          link.target = '_blank';
-          link.rel = 'noopener noreferrer';
-          link.appendChild(icon('link', 'ic-sm'));
-          const linkText = document.createElement('span');
-          linkText.textContent = item.url;
-          link.appendChild(linkText);
-          card.appendChild(link);
-        } else {
-          const urlText = document.createElement('div');
-          urlText.className = 'card-url';
-          urlText.textContent = item.url;
-          card.appendChild(urlText);
-        }
-      }
-
-      // Ghi chú
-      if (item.notes) {
-        const notes = document.createElement('div');
-        notes.className = 'card-notes';
-        notes.textContent = item.notes;
-        card.appendChild(notes);
-      }
-
-      // Lịch hẹn & Google Calendar
-      const reminderBlock = createReminderBlock(item);
-      if (reminderBlock) {
-        card.appendChild(reminderBlock);
-      }
-
-      fragment.appendChild(card);
+      fragment.appendChild(isCompact ? createCompactCard(item) : createFullCard(item));
     }
 
     els.itemsList.appendChild(fragment);
@@ -1328,6 +1505,7 @@
     try {
       const saved = await persistItemsToGist(nextItems, 'Đã xóa tài khoản khỏi Gist.');
       if (saved) {
+        state.expandedIds.delete(targetId);
         state.revealedIds.delete(targetId);
         closeDeleteModal();
       }
@@ -1535,6 +1713,8 @@
     });
 
     els.dueBannerBtn.addEventListener('click', () => setActiveFilter('upcoming'));
+    els.viewCompactBtn.addEventListener('click', () => setViewMode('compact'));
+    els.viewCardsBtn.addEventListener('click', () => setViewMode('cards'));
 
     els.addItemBtn.addEventListener('click', () => openItemModal(null));
     els.emptyAddBtn.addEventListener('click', () => openItemModal(null));
@@ -1684,6 +1864,9 @@
   function init() {
     applyTheme(localStorage.getItem(STORAGE_KEYS.THEME) || 'dark');
     state.autoLockMinutes = loadAutoLockMinutes();
+    state.viewMode = loadViewMode();
+    els.viewCompactBtn.classList.toggle('active', state.viewMode === 'compact');
+    els.viewCardsBtn.classList.toggle('active', state.viewMode === 'cards');
     updateLockButtonTitle();
     loadSavedCredentials();
     bindEvents();

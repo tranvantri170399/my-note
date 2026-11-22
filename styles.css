@@ -731,10 +731,48 @@ textarea:focus {
 }
 
 .list-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   font-size: 0.78rem;
   color: var(--text-faint);
   margin-bottom: 10px;
   font-weight: 500;
+}
+
+.view-switch {
+  display: inline-flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 4px 10px;
+  border-radius: 7px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.view-btn:hover {
+  color: var(--text);
+}
+
+.view-btn.active {
+  background: var(--surface-subtle);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
 }
 
 .due-banner {
@@ -774,13 +812,19 @@ textarea:focus {
 }
 
 /* =========================================================
-   ACCOUNT CARDS
+   ACCOUNT CARDS & COMPACT LIST
    ========================================================= */
 .items-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
   align-items: start;
   gap: 12px;
+}
+
+.items-list-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .item-card {
@@ -794,6 +838,185 @@ textarea:focus {
   box-shadow: var(--shadow-sm);
   transition: border-color 0.15s, box-shadow 0.2s, transform 0.2s;
   animation: fade-in 0.25s var(--ease);
+}
+
+.item-card.is-compact {
+  padding: 0;
+  gap: 0;
+}
+
+.item-card.is-compact.is-expanded {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow);
+}
+
+.compact-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 10px 9px 12px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: var(--radius);
+  transition: background 0.15s;
+}
+
+.compact-row:hover {
+  background: color-mix(in srgb, var(--surface-subtle) 65%, transparent);
+}
+
+.compact-row:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.is-compact .avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 0.92rem;
+}
+
+.compact-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.compact-title-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.compact-title {
+  font-size: 0.93rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-pin {
+  color: var(--warn);
+  flex-shrink: 0;
+}
+
+.compact-pin .ic {
+  fill: currentColor;
+}
+
+.compact-due-pill {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 650;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.compact-due-pill.overdue {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.compact-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 1px;
+  min-width: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.compact-sub-text {
+  font-family: var(--mono);
+  font-size: 0.77rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.compact-quick {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.compact-chevron {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  transition: transform 0.22s var(--ease), color 0.15s;
+}
+
+.is-expanded .compact-chevron {
+  transform: rotate(180deg);
+  color: var(--text);
+}
+
+.compact-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--border);
+  animation: fade-in 0.18s var(--ease);
+}
+
+.compact-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.compact-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 6px 11px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.compact-action-btn .ic {
+  width: 14px;
+  height: 14px;
+}
+
+.compact-action-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.compact-action-btn.pinned {
+  color: var(--warn);
+}
+
+.compact-action-btn.pinned .ic {
+  fill: currentColor;
+}
+
+.compact-action-btn.danger:hover {
+  background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+  color: var(--danger);
 }
 
 .item-card:hover {
@@ -864,6 +1087,8 @@ textarea:focus {
   background: var(--surface-subtle);
   padding: 1px 8px;
   border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .card-actions {
